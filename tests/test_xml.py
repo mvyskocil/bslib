@@ -1,7 +1,7 @@
 import pytest
 
 from xml.etree import cElementTree as ET
-from bslib.xml import Request, Collection
+from bslib.xml import Request, Collection, Result, ResultList, StatusElement
 
 #TBD: this is uterly incomplete!!!
 def test_request_from_apidocs():
@@ -27,3 +27,17 @@ def test_collection_from_apidocs():
 
     for el in cl:
         assert isinstance(el, Request)
+
+def test_resultlist_from_apidocs():
+    rl = ResultList.fromxml(ET.parse("apidocs/pkgresult.xml").getroot())
+
+    assert len(rl) == 18
+    assert isinstance(rl[0], Result)
+
+    res = rl[0]
+    assert res.project == "Base:System"
+    assert len(res.statuslist) == 1
+
+    st = res.statuslist[0]
+    assert isinstance(st, StatusElement)
+    assert st.package == "gpg2"
