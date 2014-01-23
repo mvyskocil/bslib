@@ -88,7 +88,7 @@ def api(template):
             dct.update(zip(func.__code__.co_varnames[2:func.__code__.co_argcount], args[2:]))
             dct.update(kwargs)
             
-            dct["ctx"] = args[1]
+            dct["ctx"] = args[0]
             dct["apiurl"] = args[1]
 
             url = apply_urltemplate(utemplate.replace("{apiurl}", dct["apiurl"]), dct)
@@ -101,6 +101,19 @@ def api(template):
 @api("GET {apiurl}/request/{reqid}")
 def GET_request_id(ctx, apiurl, reqid):
     """show info for given request id, returns xml"""
+    pass
+
+@api("GET {apiurl}/request/?view=collection&user={user}&project={project}&package={package}&states={states}&types={types}&roles={roles}")
+def GET_request_collection(ctx, apiurl, user="", project="", package="", states="", types="", roles=""):
+    """
+user: filter for given user, includes all target projects and packages where
+the user is maintainer and also open review requests
+project: limit to result to defined target project or review requests
+package: limit to result to defined target package or review requests
+states: filter for given request state, multiple matches can be added as comma seperated list (eg states=new,review)
+types: filter for given action types (comma seperated)
+roles: filter for given roles (creator, maintainer, reviewer, source or target)
+    """
     pass
 
 @api("POST {apiurl}/request/{reqid}?cmd=diff")
@@ -119,6 +132,17 @@ def POST_request(ctx, apiurl, reqid, comment, cmd="", newstate="", by_group=""):
 
 @api("GET {apiurl}/build/{project}/_result?package={package}")
 def GET_build_project_result(ctx, apiurl, project, package="package"):
-    """show the build results of given project/package, returns plain text(?)"""
+    """returns the build results of given project/package"""
+    pass
+
+#TBD: maybe needs more logic with offsets ...
+@api("GET {apiurl}/build/{project}/{package}/{repository}/{arch}/_log?start=0&nostream=1")
+def GET_build_project_package_buildlog(ctx, apiurl, project, package, repository, arch):
+    """returns the build log of given project/package/repository/arch"""
+    pass
+
+@api("GET {apiurl}/build/{project}/{package}/{repository}/{arch}/{file}")
+def GET_build_project_package_file(ctx, apiurl, project, package, repository, arch, file):
+    """returns the build-related file of given project/package/repository/arch"""
     pass
 
