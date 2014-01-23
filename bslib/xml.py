@@ -2,6 +2,22 @@
 from collections import namedtuple
 from functools import partial
 
+def check_tag_name(root, tag_name):
+    if root.tag != tag_name:
+        raise ValueError("'{}' element expected, got '{}'".format(tag_name, root.tag))
+
+def get_attr(root, name, mandatory=True):
+    attr = root.get(name)
+    if mandatory and attr is None:
+        raise ValueError("'{}' attribute is missing in element '{}'".format(name, root.tag))
+    return attr
+
+def get_text_from_tag(root, tag_name):
+    foo = root.find(tag_name)
+    if foo is None or foo.text is None:
+        return None
+    return foo.text.strip()
+
 def abstract_fromxml(tag_name, mandatory_attrs, attrs, has_comment, cls, root):
     """This is a helper function, which parses sagegiven tag name, check mandatory
     and other attributes and return given cls. API might be considered as awkward,
@@ -338,7 +354,7 @@ class RequestAction:
 
 class Request:
 
-    def __init__(self, reqid, title, description, state, accept_at, actions, reviews, history):
+    def __init__(self, reqid, title, description, state, accept_at, actions, reviews, history, diff=None):
         self.reqid = reqid
         self.title = title
         self.description = description
@@ -347,6 +363,7 @@ class Request:
         self.actions = actions
         self.reviews = reviews
         self.history = history
+        self.diff = diff
 
     @classmethod
     def fromxml(cls, root):
@@ -437,5 +454,60 @@ class Collection:
     def __getitem__(self, idx):
         return self.elements.__getitem__(idx)
 
-
 ### COLLECTIONS TAG END ###
+
+### RESULT AND RESULTLIST TAG BEGIN ###
+
+StatusElement = make_klass("StatusElement",
+    tag_name = "status",
+    fromxml_method = abstract_fromxml,
+    mandatory_attrs = ("package", "code"),
+    )
+
+class Result:
+    
+    def __init__(self, project, repository, arch, code, state, statuslist):
+        self.project = project
+        self.repository = repository
+        self.arch = arch
+        self.code = code
+        self.state = state
+        self.statuslist = statuslist
+
+    @classmethod
+    def fromxml(cls, root):
+        check_tag_name(root, "result")
+
+        kwargs = {attr: get_attr(root, attr) for attr in ("project", "repository", "arch", "code", "state")}
+
+        kwargs["statuslist"] = [StatusElement.fromxml(el) for el in root]
+        return cls(**kwargs)
+
+class ResultList:
+
+    def __init__(self, state, resultlist):
+        self.resultlist = resultlist
+
+    @classmethod
+    def fromxml(cls, root):
+        check_tag_name(root, "resultlist")
+        
+        state = get_attr(root, "state")
+        resultlist = [Result.fromxml(el) for el in root]
+
+        return cls(state = state, resultlist = resultlist)
+
+    def __len__(self):
+        return self.resultlist.__len__()
+
+    def __iter__(self):
+        return self.resultlist.__iter__()
+
+    def __next__(self):
+        return self.resultlist.__next__()
+
+    def __getitem__(self, idx):
+        return self.resultlist.__getitem__(idx)
+
+
+### RESULT AND RESULTLIST TAG END ###
