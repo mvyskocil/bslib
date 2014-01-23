@@ -4,15 +4,25 @@ from functools import partial
 
 def check_tag_name(root, tag_name):
     if root.tag != tag_name:
-        raise ValueError("'{}' element expected, got '{}'".format(tag_name, root.tag))
+        raise ValueError("Invalid element, got '{}', expected '{}'".format(root.tag, tag_name))
 
-def get_attr(root, name, mandatory=True):
+def get_attr(root, name, mandatory=True, etag_name=None):
     attr = root.get(name)
     if mandatory and attr is None:
-        raise ValueError("'{}' attribute is missing in element '{}'".format(name, root.tag))
+        tn = etag_name if etag_name is not None else root.tag
+        raise ValueError("The '{}' attribute is missing in element '{}'".format(name, tn))
     return attr
 
-def get_text_from_tag(root, tag_name):
+def get_subtag(root, tag_name, klass, mandatory=True, etag_name=None):
+    subtag = root.find(tag_name)
+    if mandatory and subtag is None:
+        tn = etag_name if etag_name is not None else root.tag
+        raise ValueError("target sub element expected in '{}'".format(tn))
+    if subtag is None:
+        return subtag
+    return klass.fromxml(subtag)
+
+def get_text_from_subtag(root, tag_name):
     foo = root.find(tag_name)
     if foo is None or foo.text is None:
         return None
@@ -44,25 +54,17 @@ def abstract_fromxml(tag_name, mandatory_attrs, attrs, has_comment, cls, root):
     :return: instance of a ``cls``
     """
     
-    if root.tag != tag_name:
-        raise ValueError("{} tag expected, got {}".format(tag_name, root.tag))
+    check_tag_name(root, tag_name)
 
     kwargs = dict()
-    for attr in mandatory_attrs:
-        foo = root.get(attr)
-        if foo is None:
-            raise ValueError("{} attribute missing in tag {}".format(attr, tag_name))
-        kwargs[attr] = foo
-
-    for attr in attrs:
-        kwargs[attr] = root.get(attr)
+    for name in mandatory_attrs:
+        kwargs[name] = get_attr(root, name, mandatory=True)
+    
+    for name in attrs:
+        kwargs[name] = get_attr(root, name, mandatory=False)
     
     if has_comment:
-        foo = root.find("comment")
-        if foo is None:
-            kwargs["comment"] = ""
-        else:
-            kwargs["comment"] = foo.text.strip()
+        kwargs["comment"] = get_text_from_subtag(root, "comment")
 
     return cls(**kwargs)
 
@@ -160,37 +162,27 @@ class ActionSubmit:
 
     @classmethod
     def fromxml(cls, root):
-        if root.tag != "action":
-            raise ValueError("action tag expected, got {}".format(root.tag))
-
-        if root.get("type") != "submit":
-            raise ValueError("only action type='{}' supported".format(cls.action_type))
-
-        foo = root.find("source")
-        if foo is None:
-            raise ValueError("source sub element expected in action type='submit'")
-        source = Source.fromxml(foo)
         
-        foo = root.find("target")
-        if foo is None:
-            raise ValueError("target sub element expected in action type='submit'")
-        target = Target.fromxml(foo)
+        check_tag_name(root, "action")
+        
+        tn = "action type=\"{}\"".format(cls.action_type)
+ 
+        if get_attr(root, "type") != cls.action_type:
+            raise ValueError("only '{}' supported".format(tn))
 
-        foo = root.find("acceptinfo")
-        if foo is None:
-            acceptinfo = None
-        else:
-            acceptinfo = Acceptinfo.fromxml(foo)
+        source = get_subtag(root, "source", Source, etag_name=tn)
+        target = get_subtag(root, "target", Target, etag_name=tn)
+        acceptinfo = get_subtag(root, "acceptinfo", Acceptinfo, mandatory=False)
 
         options = dict()
         foo = root.find("options")
         if foo is not None:
             #TODO
             for attr in ("sourceupdate", "updatelink"):
-                bar = foo.find(attr)
+                bar = get_text_from_subtag(foo, attr)
                 if bar is None:
                     continue
-                options = bar.text.strip()
+                options[attr] = bar
 
         return cls(
             source = source,
@@ -210,28 +202,18 @@ class ActionAddRole:
 
     @classmethod
     def fromxml(cls, root):
-        if root.tag != "action":
-            raise ValueError("action tag expected, got {}".format(root.tag))
-
-        if root.get("type") != cls.action_type:
-            raise ValueError("only action type='{}' supported".format(cls.action_type))
-
-        foo = root.find("target")
-        if foo is None:
-            raise ValueError("target sub element expected in action type='{}'".format(cls.action_type))
-        target = Target.fromxml(foo)
-
-        foo = root.find("person")
-        if foo is None:
-            person = None
-        else:
-            person = Person.fromxml(foo)
         
-        foo = root.find("group")
-        if foo is None:
-            group = None
-        else:
-            group = Group.fromxml(foo)
+        check_tag_name(root, "action")
+        
+        tn = "action type=\"{}\"".format(cls.action_type)
+        
+        # this raises ValueError if not exists
+        if get_attr(root, "type") != cls.action_type:
+            raise ValueError("only '{}' supported".format(tn))
+
+        target = get_subtag(root, "target", Target, etag_name=tn)
+        person = get_subtag(root, "person", Person, mandatory=False)
+        group  = get_subtag(root, "group", Group, mandatory=False)
 
         return cls(
             target = target,
@@ -251,16 +233,12 @@ class ActionDelete:
 
     @classmethod
     def fromxml(cls, root):
-        if root.tag != "action":
-            raise ValueError("action tag expected, got {}".format(root.tag))
+        
+        check_tag_name(root, "action")
+        
+        tn = "action type=\"{}\"".format(cls.action_type)
 
-        if root.get("type") != cls.action_type:
-            raise ValueError("only action type='{}' supported".format(cls.action_type))
-
-        foo = root.find("target")
-        if foo is None:
-            raise ValueError("target sub element expected in action type='{}'".format(cls.action_type))
-        target = Target.fromxml(foo)
+        target = get_subtag(root, "target", Target, etag_name=tn)
 
         return cls(
             target = target,
@@ -276,21 +254,16 @@ class ActionChangeDevel:
 
     @classmethod
     def fromxml(cls, root):
-        if root.tag != "action":
-            raise ValueError("action tag expected, got {}".format(root.tag))
-
-        if root.get("type") != cls.action_type:
-            raise ValueError("only action type='{}' supported".format(cls.action_type))
         
-        foo = root.find("source")
-        if foo is None:
-            raise ValueError("source sub element expected in action type='{}'".format(cls.action_type))
-        source = Source.fromxml(foo)
+        check_tag_name(root, "action")
+        
+        tn = "action type=\"{}\"".format(cls.action_type)
+        
+        if get_attr(root, "type") != cls.action_type:
+            raise ValueError("only '{}' supported".format(tn))
 
-        foo = root.find("target")
-        if foo is None:
-            raise ValueError("target sub element expected in action type='{}'".format(cls.action_type))
-        target = Target.fromxml(foo)
+        source = get_subtag(root, "source", Source, etag_name=tn)
+        target = get_subtag(root, "target", Target, etag_name=tn)
 
         return cls(
             source = source,
@@ -310,15 +283,15 @@ class ActionGroup:
 
     @classmethod
     def fromxml(cls, root):
-        if root.tag != "action":
-            raise ValueError("action tag expected, got {}".format(root.tag))
-
-        if root.get("type") != cls.action_type:
-            raise ValueError("only action type='{}' supported".format(cls.action_type))
         
-        grouped_id = root.get("grouped_id")
-        if grouped_id is None:
-            raise ValueError("grouped_id attribute is missing in action type='{}'".format(cls.action_type))
+        check_tag_name(root, "action")
+        
+        tn = "action type=\"{}\"".format(cls.action_type)
+        
+        if get_attr(root, "type") != cls.action_type:
+            raise ValueError("only '{}' supported".format(tn))
+        
+        grouped_id = get_attr(root, "grouped_id")
 
         return cls(
             grouped_id = grouped_id)
@@ -338,16 +311,10 @@ class RequestAction:
     @classmethod
     def fromxml(cls, root):
 
-        if root.tag != "action":
-            raise ValueError("action tag expected, got {}".format(root.tag))
+        check_tag_name(root, "action")
 
-        action_type = root.get("type")
-        if action_type is None:
-            raise ValueError("'type' attribute mandatory for action element")
-
-        if action_type not in cls._type_map:
-            raise ValueError("unknown action type='{}'".format(action_type))
-
+        action_type = get_attr(root, "type")
+        
         return getattr(
             cls._type_map[action_type],
             "fromxml")(root)
@@ -369,26 +336,19 @@ class Request:
     def fromxml(cls, root):
         """read it from parsed xml"""
 
-        if root.tag != "request":
-            raise ValueError("request tag expected, got {}".format(root.tag))
+        check_tag_name(root, "request")
 
-        reqid = root.get("id")
-        if not reqid:
-            raise ValueError("id attribute missing in tag request")
+        reqid = get_attr(root, "id")
+        try:
+            reqid = int(reqid)
+        except ValueError:
+            raise ValueError("numeric reqid attribute expected in element 'request'") from None
 
-        def _text(root, tag_name):
-            foo = root.find(tag_name)
-            if foo is None or foo.text is None: return None
-            return foo.text.strip()
+        title = get_text_from_subtag(root, "title")
+        description = get_text_from_subtag(root, "description")
+        accept_at = get_text_from_subtag(root, "accept_at")
 
-        title = _text(root, "title")
-        description = _text(root, "description")
-        accept_at = _text(root, "accept_at")
-
-        state_el = root.find("state")
-        if state_el is None:
-            raise ValueError("state tag not found!")
-        state = RequestState.fromxml(state_el)
+        state = get_subtag(root, "state", RequestState)
 
         def _list(meth, tag_name):
             return [meth(element) \
@@ -419,13 +379,13 @@ class Collection:
     @classmethod
     def fromxml(cls, root):
 
-        if root.tag != "collection":
-            raise ValueError("collection tag expected, got {}".format(root.tag))
+        check_tag_name(root, "collection")
 
-        #TODO: check non numeric values
-        matches = int(root.get("matches"))
-        if matches is None:
-            raise ValueError("'matches' attribute mandatory for collection element")
+        matches = get_attr(root, "matches")
+        try:
+            matches = int(matches)
+        except ValueError:
+            raise ValueError("numeric matches attribute expected in element 'collection'") from None
 
         xml_elements = [el for el in root]
         if matches != len(xml_elements):
