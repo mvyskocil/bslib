@@ -1,9 +1,32 @@
 
-from xml.etree import cElementTree as ET
 from collections import namedtuple
 from functools import partial
 
 def abstract_fromxml(tag_name, mandatory_attrs, attrs, has_comment, cls, root):
+    """This is a helper function, which parses sagegiven tag name, check mandatory
+    and other attributes and return given cls. API might be considered as awkward,
+    but this is abstract function and instances made by functools.partial does
+    have only cls and root parameters.
+
+    Usage:
+        foo_fromxml = functools.partial(abstract_fromxml, "foo", ("ham", ), ("spam", "spam2"), False)
+        ...
+        root = xml.find("foo")
+        a_foo = foo_fromxml(FooElement, root)
+    
+    :param tag_name: the tag name of given root element, ValueError error is
+                     raised if does not match
+    :param mandatory_attrs: list of mandatory attributes, ie if they're not there
+                            ValueError is raised
+    :param attrs: list of other attributes, defaults to empty list
+    :param has_comment: a quirk for elements does have <comment></comment>
+                         subelement, defaults to False
+    :param cls: class, which __init__ function will be called and which instance
+                will be returned
+    :param root: root element to be processed
+
+    :return: instance of a ``cls``
+    """
     
     if root.tag != tag_name:
         raise ValueError("{} tag expected, got {}".format(tag_name, root.tag))
@@ -28,6 +51,19 @@ def abstract_fromxml(tag_name, mandatory_attrs, attrs, has_comment, cls, root):
     return cls(**kwargs)
 
 def make_klass(klass_name, tag_name, fromxml_method, mandatory_attrs, attrs=(), has_comment=False):
+    """Constructs a klass (named tuple) with given name
+    for specific tag, it does bind an instance of
+    ``abstract_fromxml`` to it, so all klasses does
+    have fromxml classmethod.
+    
+    Example:
+        #looks a bit like Javascript :)
+        FooElement = make_klass("FooElement", "foo", abstract_fromxml, ("ham", ), ("spam", "spam2"), False)
+        ...
+        root = xml.find("foo")
+        a_foo = FooElement.fromxml(root)
+        assert a_foo.ham == "ham-attr-value"
+    """
     
     attrlist = list(mandatory_attrs)
     if has_comment:
@@ -38,6 +74,8 @@ def make_klass(klass_name, tag_name, fromxml_method, mandatory_attrs, attrs=(), 
     fromxml = partial(fromxml_method, tag_name, mandatory_attrs, attrs, has_comment, nt)
     nt.fromxml = fromxml
     return nt
+
+### REQUEST TAG BEGIN ###
 
 RequestState = make_klass("RequestState",
     tag_name = "state",
@@ -323,7 +361,7 @@ class Request:
 
         def _text(root, tag_name):
             foo = root.find(tag_name)
-            if foo is None: return None
+            if foo is None or foo.text is None: return None
             return foo.text.strip()
 
         title = _text(root, "title")
@@ -353,4 +391,51 @@ class Request:
             reviews = reviews,
             history = history)
 
-rq = Request.fromxml(ET.parse("apidocs/api.opensuse.org/apidocs/request.xml").getroot())
+### REQUEST TAG END ###
+
+### COLLECTIONS TAG BEGIN ###
+class Collection:
+
+    def __init__(self, elements):
+        self.elements = elements
+
+    @classmethod
+    def fromxml(cls, root):
+
+        if root.tag != "collection":
+            raise ValueError("collection tag expected, got {}".format(root.tag))
+
+        #TODO: check non numeric values
+        matches = int(root.get("matches"))
+        if matches is None:
+            raise ValueError("'matches' attribute mandatory for collection element")
+
+        xml_elements = [el for el in root]
+        if matches != len(xml_elements):
+            raise ValueError("'matches' value ({}) is not equal real number of elements ({})".format(matches, len(xml_elements)))
+
+        types = {el.tag for el in xml_elements}
+        if len(types) != 1:
+            raise ValueError("various types in collection is not supported, {}".format(types))
+
+        typ = types.pop()
+        if typ != "request":
+            raise NotImplementedError("support for {} is not yet implemented".format(typ))
+
+        return cls(
+            elements=[Request.fromxml(el) for el in xml_elements])
+
+    def __len__(self):
+        return self.elements.__len__()
+
+    def __iter__(self):
+        return self.elements.__iter__()
+
+    def __next__(self):
+        return self.elements.__next__()
+
+    def __getitem__(self, idx):
+        return self.elements.__getitem__(idx)
+
+
+### COLLECTIONS TAG END ###

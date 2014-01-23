@@ -1,6 +1,7 @@
+import pytest
 
 from xml.etree import cElementTree as ET
-from bslib.request import Request
+from bslib.xml import Request, Collection
 
 #TBD: this is uterly incomplete!!!
 def test_request_from_apidocs():
@@ -14,3 +15,15 @@ def test_request_from_apidocs():
     assert len(rq.actions) == 10
     assert len(rq.reviews) == 2
     assert len(rq.history) == 2
+
+def test_collection_from_apidocs():
+    cl = Collection.fromxml(ET.parse("apidocs/collection.xml").getroot())
+
+    assert len(cl) == 2
+    assert cl[0] != cl[1]
+
+    with pytest.raises(IndexError):
+        cl[42]
+
+    for el in cl:
+        assert isinstance(el, Request)
