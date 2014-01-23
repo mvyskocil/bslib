@@ -61,6 +61,10 @@ class BSContext:
     def opener(self, apiurl):
         return self._opener[apiurl]
 
+    @property
+    def config(self):
+        return self._config
+
 __all__ = ["BSContext", ]
 
 # prototype - this should go away from __init__
