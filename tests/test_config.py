@@ -88,8 +88,6 @@ def test_BSConfig_advanced():
     }
 
     cfg = BSConfig(**cfg_dict)
-    assert hasattr(cfg, "ibs")
-    assert hasattr(cfg.ibs, "somedict")
     #TODO: does osc some url normalization?
     assert "https://api.suse.de/" not in cfg
     assert "https://api.suse.de" in cfg

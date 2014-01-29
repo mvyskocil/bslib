@@ -36,9 +36,6 @@ class BSConfig(types.SimpleNamespace, collections.abc.Mapping):
                     del value["pass"]
                 cfg = BSConfig(**value)
                 self.__dict__[key] = cfg
-                if "aliases" in cfg:
-                    for a in cfg.aliases:
-                        self.__dict__[a] = cfg
             else:
                 self.__dict__[key] = value
 
