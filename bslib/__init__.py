@@ -46,7 +46,7 @@ class BSContext:
             logger = logging.getLogger("bslib").addHandler(logging.NullHandler())
         #TODO: logger handling
         self._logger = logger
-        self.config  = config
+        self._config  = config
         self._opener = build_opener(
             self.config.apiurl,
             self._config.user,
@@ -83,74 +83,8 @@ class BSContext:
     def critical(self, msg):
         self._logger.critical(msg)
 
-    def opener(self, apiurl):
-        return self._opener[apiurl]
-
     @property
     def config(self):
         return self._config
 
 __all__ = ["BSContext", ]
-
-# prototype - this should go away from __init__
-
-"""
-from http.cookiejar import LWPCookieJar, CookieJar
-from urllib.request import Request, install_opener, HTTPBasicAuthHandler, HTTPPasswordMgrWithDefaultRealm, HTTPCookieProcessor, ProxyHandler, build_opener, urlopen
-import os.path
-
-apiurl = "https://api.opensuse.org/"
-url =  apiurl + "source/" + "openSUSE:Factory/" + "make" + "?rev=latest"
-req = Request(url)
-authhandler = HTTPBasicAuthHandler(
-    HTTPPasswordMgrWithDefaultRealm())
-authhandler.add_password(None, apiurl, "mvyskocil", "20Dvacet")
-# TODO check ssl certs
-
-# TODO cookiejar handling
-cookie_file = os.path.expanduser("~/.osc_cookiejar")
-cookiejar = LWPCookieJar(cookie_file)
-try:
-    cookiejar.load(ignore_discard=True)
-except IOError:
-    try:
-        open(cookie_file, 'w').close()
-        os.chmod(cookie_file, 0o600)
-    except:
-        #print 'Unable to create cookiejar file: \'%s\'. Using RAM-based cookies.' % cookie_file
-        cookiejar = CookieJar()
-
-
-# TODO proxy handling
-proxyhandler = ProxyHandler()
-
-opener = build_opener(HTTPCookieProcessor(cookiejar), authhandler, proxyhandler)
-
-install_opener(opener)
-
-fd = urlopen(url)
-"""
-
-# explained
-# HTTPBasicAuthHandler - support of HTTP Basic auth
-# HTTPPasswordMgrWithDefaultRealm - some mapping
-# authhandler.add_password - add a password for given apiurl
-#
-# ProxyHandler - the class dealing with proxies
-#
-# HttpCookieProcessor - deals with stored cookie
-#
-# install_opener - install a "global" opener - don't use that!
-#
-# there is HTTPSHandler, which might do something similar
-#
-# # allow only sslv3 and tlsv1, but not sslv2
-# ctx = ssl.SSLContext(protocol=ssl.PROTCOL_SSLv23)
-# ctx.options |= ssl.OP_NO_SSLv2
-# ctx.verify_mode = ssl.CERT_REQUIRED
-# ctx.set_default_verify_paths()
-# ctx.load_verify_locations ???
-# httpsh = HTTPSHandler(debuglevel=5, context=5, check_hostname=True)
-#
-# opener = build_opener(httpsh, ..., ...)
-# opener.open(url)
