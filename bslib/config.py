@@ -2,6 +2,7 @@ import types
 import collections.abc
 import configparser
 import os
+import copy
 from collections import deque
 
 from .utils import is_url, passx_decode
@@ -17,27 +18,32 @@ class BSConfig(types.SimpleNamespace, collections.abc.Mapping):
     def __init__(self, **kwargs):
 
         for key, value in kwargs.items():
-            if isinstance(value, dict):
-                vk = value.keys()
-                #ensure at least name/pass exists for apiurl configs
-                if is_url(key):
-                    if not "user" in vk:
-                        raise ValueError("'user' field is mandatory")
-                    if value.get("keyring") == "1":
-                        raise NotImplementedError("keyring support is not yet done")
-                    if value.get("passx") is not None:
-                        value["pass"] = passx_decode(value["passx"])
-                        del value["passx"]
-
-                    if not "pass" in vk:
-                        raise ValueError("'pass' field is mandatory")
-                    #this is attribute friendly version
-                    value["pswd"] = value["pass"]
-                    del value["pass"]
-                cfg = BSConfig(**value)
-                self.__dict__[key] = cfg
-            else:
+            if not isinstance(value, dict):
                 self.__dict__[key] = value
+                continue
+
+            #ensure at least name/pass exists for apiurl configs
+            if is_url(key):
+                # do not modify dict
+                value = copy.copy(value)
+                vk = value.keys()
+
+                if not "user" in vk:
+                    raise ValueError("'user' field is mandatory")
+                if value.get("keyring") == "1":
+                    raise NotImplementedError("keyring support is not yet done")
+                if value.get("passx") is not None:
+                    value["pass"] = passx_decode(value["passx"])
+                    del value["passx"]
+
+                if not "pass" in vk:
+                    raise ValueError("'pass' field is mandatory")
+                #this is attribute friendly version
+                value["pswd"] = value["pass"]
+                del value["pass"]
+
+            cfg = BSConfig(**value)
+            self.__dict__[key] = cfg
 
     @classmethod
     def fromoscrc(cls, path=None):
@@ -55,6 +61,17 @@ class BSConfig(types.SimpleNamespace, collections.abc.Mapping):
     def apiurls(self):
         return (k for k in self.keys() if is_url(k))
 
+    def for_apiurl(self, apiurl):
+        """Return a BSConfig instance for given apiurl + general section only"""
+        if apiurl not in self.apiurls():
+            raise ValueError("Unknown apiurl {}, not in {}".format(apiurl, list(self.apiurls())))
+
+        dct = {k:v for k, v in self["general"].items()}
+        dct.update({k:v for k, v in self[apiurl].items()})
+        dct["apiurl"] = apiurl
+
+        return self.__class__(**dct)
+
     def __getitem__(self, value):
         return self.__dict__.__getitem__(value)
         
@@ -63,3 +80,6 @@ class BSConfig(types.SimpleNamespace, collections.abc.Mapping):
         
     def __len__(self):
         return self.__dict__.__len__()
+
+    def items(self):
+        return self.__dict__.items()

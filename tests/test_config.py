@@ -71,26 +71,56 @@ def test_BSConfig_basic():
 
     assert type(foo.__iter__()) == type({}.__iter__())
 
-def test_BSConfig_advanced():
-
-    cfg_dict = {
+CFG_DICT = {
+    "general" : {
         "apiurl" : "https://api.opensuse.org/",
         "user" : "foo",
         "pass" : "bar",
         "passx" : "ham",
+    },
 
-        "https://api.suse.de" : {
-            "user" : "bbb",
-            "pass" : "zzz",
-            "aliases" : ("ibs", ),
-            "somedict" : {"foo" : 42, "bar" : None}
-        }
+    "https://api.suse.de" : {
+        "user" : "bbb",
+        "pass" : "zzz",
+        "aliases" : ("ibs", ),
+        "somedict" : {"foo" : 42, "bar" : None}
+    },
+
+    "https://api.opensuse.org/" : {
+        "user" : "joe",
+        "pass" : "joes's passwd",
     }
+}
 
-    cfg = BSConfig(**cfg_dict)
+def test_BSConfig_advanced():
+
+    global CFG_DICT
+    cfg = BSConfig(**CFG_DICT)
+    assert "general" in cfg
     #TODO: does osc some url normalization?
     assert "https://api.suse.de/" not in cfg
     assert "https://api.suse.de" in cfg
+    assert "https://api.opensuse.org/" in cfg
+
+def test_BSConfig_for_apiurl():
+    
+    global CFG_DICT
+    cfg = BSConfig(**CFG_DICT)
+
+    with pytest.raises(ValueError):
+        ocfg = cfg.for_apiurl("https://api.opensuse.org")
+    
+    ocfg = cfg.for_apiurl("https://api.opensuse.org/")
+    assert cfg != ocfg
+    assert cfg.items() != ocfg.items()
+    assert set(ocfg.items()) == \
+        {('pswd', "joes's passwd"), ('apiurl', 'https://api.opensuse.org/'), ('pass', 'bar'), ('passx', 'ham'), ('user', 'joe')}
+    
+    icfg = cfg.for_apiurl("https://api.suse.de")
+    assert cfg != icfg
+    assert ocfg != icfg
+    assert ocfg.items() != icfg.items()
+    assert icfg.apiurl == "https://api.suse.de"
 
 def test_BSConfig_badoscrc(oscrc_nouser):
 

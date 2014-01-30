@@ -5,6 +5,16 @@
 # Licensed under MIT
 #
 
+"""Open Build Service client library
+
+Library with interaction with Open Build Service instance. It is
+ * small - because can't do much atm
+ * well structured - provides low and high-level access
+ * just a library (sooo unlike osc)
+ * under permissive license - don't belive at GPL libs
+
+"""
+
 __version__ = '0.1'
 
 import logging
@@ -13,31 +23,46 @@ from collections import namedtuple
 from .utils import build_opener
 
 class BSContext:
+    """BSContext does encapsulates all global resources
+    for a library and is mandatory argument for most of
+    functions. The most convient way how to use that is
+
+        ctx = BSContext.fromoscrc(apiurl)
+        some_cool_function(ctx, project, package)
+
+    However in a case you need to talk to more than one
+    OBS instances, you can do the following
+
+        cfg = BSConfig.fromoscrc()
+        ctx1 = BSContext(cfg.for_apiurl(apiurl1))
+        ctx2 = BSContext(cfg.for_apiurl(apiurl2))
+
+        some_cool_function(ctx1, project, package)
+        some_cool_function(ctx2, project, package)
+    """
 
     def __init__(self, config, logger=None):
         if not logger:
             logger = logging.getLogger("bslib").addHandler(logging.NullHandler())
         #TODO: logger handling
         self._logger = logger
-        self._config  = config
-        self._opener = dict()
-        for apiurl in self._config.apiurls():
-            self._opener[apiurl] = build_opener(
-                apiurl,
-                self._config[apiurl].user,
-                self._config[apiurl].pswd,
-                self._config.get("cookiejar", "~/.osc_cookiejar"),
-                debuglevel=5,
-                capath=self._config[apiurl].get("capath", None),
-                cafile=self._config[apiurl].get("cafile", None),
-                )
+        self.config  = config
+        self._opener = build_opener(
+            self.config.apiurl,
+            self._config.user,
+            self.config.pswd,
+            self._config.get("cookiejar", "~/.osc_cookiejar"),
+            debuglevel=5,
+            capath=self._config.get("capath", None),
+            cafile=self._config.get("cafile", None),
+            )
 
     @classmethod
-    def fromoscrc(cls, path=None):
+    def fromoscrc(cls, apiurl, path=None):
         """Load context from oscrc and setup the logger properly"""
         from bslib.config import BSConfig
         #TODO: logger handling
-        return cls(config=BSConfig.fromoscrc(path), logger=None)
+        return cls(config=BSConfig.fromoscrc(path), logger=None).for_apiurl(apiurl)
 
     def log(self, severity, msg):
         """log the 'msg' with given integer 'severity'"""
