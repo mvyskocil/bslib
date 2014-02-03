@@ -91,7 +91,7 @@ def api(template):
             url = apply_urltemplate(utemplate.replace("{apiurl}", apiurl), dct)
             if not is_url(url):
                 raise ValueError("invalid url {}".format(url))
-            return raw(dct['ctx'], method, apiurl, url, datafp=dct.get(post_variable_name))
+            return raw(dct['ctx'], method, url, datafp=dct.get(post_variable_name))
         return wrapper
     return inner
 

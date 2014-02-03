@@ -48,9 +48,9 @@ class BSContext:
         self._logger = logger
         self._config  = config
         self._opener = build_opener(
-            self.config.apiurl,
+            self._config.apiurl,
             self._config.user,
-            self.config.pswd,
+            self._config.pswd,
             self._config.get("cookiejar", "~/.osc_cookiejar"),
             debuglevel=5,
             capath=self._config.get("capath", None),
@@ -62,7 +62,7 @@ class BSContext:
         """Load context from oscrc and setup the logger properly"""
         from bslib.config import BSConfig
         #TODO: logger handling
-        return cls(config=BSConfig.fromoscrc(path), logger=None).for_apiurl(apiurl)
+        return cls(config=BSConfig.fromoscrc(path).for_apiurl(apiurl), logger=None)
 
     def log(self, severity, msg):
         """log the 'msg' with given integer 'severity'"""
