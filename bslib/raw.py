@@ -18,20 +18,17 @@ from functools import wraps
 
 from .utils import is_url, inspect_signature, apply_urltemplate
 
-def raw(ctx, method, apiurl, url, datafp=None):
-    """Do the raw http method call. Having both apiurl and url seems to be
-    awkard, but actually it saves us from calling urlsplit on url. Plus all
-    callers does have apiurl."""
+def raw(ctx, method, url, datafp=None):
+    """Do the raw http method call on url."""
     
     #TODO: we need a real debugging
     print("DEBUG: {} {}".format(method, url))
-    opener = ctx.opener(apiurl)
     if method == "GET":
-        resp = opener.open(url)
+        resp = ctx.opener.open(url)
         if resp.getcode() != 200:
             raise NotImplementedError("non 200 responses are not yet implemented")
     elif method == "POST":
-        resp = opener.open(url, data=datafp.read() if datafp is not None else None)
+        resp = ctx.opener.open(url, data=datafp.read() if datafp is not None else None)
         if resp.getcode() != 200:
             raise NotImplementedError("non 200 responses are not yet implemented")
     elif method in ("PUT", "DELETE"):
@@ -51,7 +48,7 @@ def api(template):
     where format arguments are read from underlying function signature. Which
     would look like
 
-    def some_cool_name(context, apiurl, parametrized, by="by", string="arguments"): pass
+    def some_cool_name(context, parametrized, by="by", string="arguments"): pass
 
     for POST requests, template does look like
         'POST(comment) {apiurl}/some/{path}'
@@ -61,7 +58,7 @@ def api(template):
     passed to POST request. For POST requests without any data, simple POST or POST()
     would be acceptable.
 
-    Function must have at least two arguments - context and apiurl, the rest is
+    Function must have at least context parameter, the rest is
     optional. It does ignore empty (or None) parts of query string.
 
     returns: filelike object with a response
@@ -70,8 +67,8 @@ def api(template):
         @wraps(func)
         def wrapper(*args, **kwargs):
 
-            if len(args) < 2:
-                raise ValueError("arguments context and apiurl are mandatory")
+            if len(args) < 1:
+                raise ValueError("context parameter is mandatory")
             
             method, utemplate = template.split(' ', 1)
             post_variable_name = None
@@ -85,26 +82,26 @@ def api(template):
                 raise ValueError("invalid HTTP method {}".format(method))
 
             dct = {p: df for p, hd, df in inspect_signature(func) if hd == True}
-            dct.update(zip(func.__code__.co_varnames[2:func.__code__.co_argcount], args[2:]))
+            dct.update(zip(func.__code__.co_varnames[1:func.__code__.co_argcount], args[1:]))
             dct.update(kwargs)
             
             dct["ctx"] = args[0]
-            dct["apiurl"] = args[1]
+            apiurl = dct["ctx"].apiurl
 
-            url = apply_urltemplate(utemplate.replace("{apiurl}", dct["apiurl"]), dct)
+            url = apply_urltemplate(utemplate.replace("{apiurl}", apiurl), dct)
             if not is_url(url):
                 raise ValueError("invalid url {}".format(url))
-            return raw(dct['ctx'], method, dct['apiurl'], url, datafp=dct.get(post_variable_name))
+            return raw(dct['ctx'], method, apiurl, url, datafp=dct.get(post_variable_name))
         return wrapper
     return inner
 
 @api("GET {apiurl}/request/{reqid}")
-def GET_request_id(ctx, apiurl, reqid):
+def GET_request_id(ctx, reqid):
     """show info for given request id, returns xml"""
     pass
 
 @api("GET {apiurl}/request/?view=collection&user={user}&project={project}&package={package}&states={states}&types={types}&roles={roles}")
-def GET_request_collection(ctx, apiurl, user="", project="", package="", states="", types="", roles=""):
+def GET_request_collection(ctx, user="", project="", package="", states="", types="", roles=""):
     """
 user: filter for given user, includes all target projects and packages where
 the user is maintainer and also open review requests
@@ -117,12 +114,12 @@ roles: filter for given roles (creator, maintainer, reviewer, source or target)
     pass
 
 @api("POST {apiurl}/request/{reqid}?cmd=diff")
-def POST_request_id_cmddiff(ctx, apiurl, reqid):
+def POST_request_id_cmddiff(ctx, reqid):
     """show the diff of given request id, returns plain text"""
     pass
 
 @api("POST(comment) {apiurl}/request/{reqid}?cmd={cmd}&newstate={newstate}&by_group={by_group}")
-def POST_request(ctx, apiurl, reqid, comment, cmd="", newstate="", by_group=""):
+def POST_request(ctx, reqid, comment, cmd="", newstate="", by_group=""):
     """change the state of reqid to newstate
     
     TBD: document allowed arguments for newstate and cmd
@@ -131,18 +128,18 @@ def POST_request(ctx, apiurl, reqid, comment, cmd="", newstate="", by_group=""):
     pass
 
 @api("GET {apiurl}/build/{project}/_result?package={package}")
-def GET_build_project_result(ctx, apiurl, project, package="package"):
+def GET_build_project_result(ctx, project, package="package"):
     """returns the build results of given project/package"""
     pass
 
 #TBD: maybe needs more logic with offsets ...
 @api("GET {apiurl}/build/{project}/{package}/{repository}/{arch}/_log?start=0&nostream=1")
-def GET_build_project_package_buildlog(ctx, apiurl, project, package, repository, arch):
+def GET_build_project_package_buildlog(ctx, project, package, repository, arch):
     """returns the build log of given project/package/repository/arch"""
     pass
 
 @api("GET {apiurl}/build/{project}/{package}/{repository}/{arch}/{file}")
-def GET_build_project_package_file(ctx, apiurl, project, package, repository, arch, file):
+def GET_build_project_package_file(ctx, project, package, repository, arch, file):
     """returns the build-related file of given project/package/repository/arch"""
     pass
 

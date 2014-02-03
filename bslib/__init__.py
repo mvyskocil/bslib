@@ -84,7 +84,15 @@ class BSContext:
         self._logger.critical(msg)
 
     @property
+    def apiurl(self):
+        return self._config.apiurl
+
+    @property
     def config(self):
         return self._config
+
+    @property
+    def opener(self):
+        return self._opener
 
 __all__ = ["BSContext", ]
