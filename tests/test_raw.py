@@ -13,10 +13,10 @@ from .test_config import CFG_DICT
 def raw_return_string():
     #monkeys, monkeys!
     old_raw = bslib.raw.raw
-    def raw(ctx, method, apiurl, url, datafp=None):
+    def raw(ctx, method, url, datafp=None):
         if method == "POST":
-            return method, apiurl, url, datafp
-        return method, apiurl, url
+            return method, url, datafp
+        return method, url
     bslib.raw.raw = raw
     yield
 
@@ -35,20 +35,20 @@ def test_basic_requests(raw_return_string):
     global ctx
     apiurl = ctx.apiurl
 
-    assert GET_request_id(ctx, 11) == ("GET", apiurl, "{}/request/11".format(apiurl))
+    assert GET_request_id(ctx, 11) == ("GET", "{}/request/11".format(apiurl))
     #it is OK to pass an incorrect argument, as functions does not do any checking
-    assert GET_request_id(ctx, "joe") == ("GET", apiurl, "{}/request/joe".format(apiurl))
+    assert GET_request_id(ctx, "joe") == ("GET", "{}/request/joe".format(apiurl))
     #tests- if quote is used on argument
-    assert GET_request_id(ctx, "žluť") == ("GET", apiurl, "{}/request/%C5%BElu%C5%A5".format(apiurl))
+    assert GET_request_id(ctx, "žluť") == ("GET", "{}/request/%C5%BElu%C5%A5".format(apiurl))
     #tests POST
-    assert POST_request_id_cmddiff(ctx, 11) == ("POST", apiurl, "{}/request/11?cmd=diff".format(apiurl), None)
+    assert POST_request_id_cmddiff(ctx, 11) == ("POST", "{}/request/11?cmd=diff".format(apiurl), None)
     comment = BytesIO(b"comment")
-    assert POST_request(ctx, 11, comment=comment) == ("POST", apiurl, "{}/request/11".format(apiurl), comment)
+    assert POST_request(ctx, 11, comment=comment) == ("POST", "{}/request/11".format(apiurl), comment)
 
     @api("PUT {apiurl}/method/?arg={arg}")
     def x(ctx, arg=42): pass
 
-    assert x(ctx, ) == ("PUT", apiurl, "{}/method/?arg=42".format(apiurl))
+    assert x(ctx, ) == ("PUT", "{}/method/?arg=42".format(apiurl))
 
 def test_error_requests(raw_return_string):
     
