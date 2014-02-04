@@ -4,7 +4,7 @@ from collections import namedtuple
 
 from xml.etree import cElementTree as ET
 from .raw import GET_request_id, POST_request_id_cmddiff, GET_build_project_result, GET_build_project_package_buildlog, GET_request_collection
-from .xml import Request, ResultList
+from .xml import Request, ResultList, Collection
 
 def get_request(ctx, reqid, diff=False):
 
