@@ -3,7 +3,7 @@ import base64
 import os
 import ssl
 
-from urllib.parse import urlparse, urljoin, parse_qs, urlencode, urlsplit, urlunsplit, quote
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
 from urllib.request import HTTPBasicAuthHandler, HTTPPasswordMgrWithDefaultRealm, HTTPSHandler, ProxyHandler, proxy_bypass, HTTPCookieProcessor
 from urllib.request import build_opener as _build_opener
 from http.cookiejar import LWPCookieJar, CookieJar
@@ -19,7 +19,7 @@ def passx_encode(passwd):
 
 def is_url(string):
     """determine if given string is url (ie something with at least scheme and netloc"""
-    foo = urlparse(string)
+    foo = urlsplit(string)
     return foo.scheme != '' and foo.netloc != ''
 
 def build_opener(apiurl, user, password, cookie_path, debuglevel=0, capath=None, cafile=None, headers=()):
