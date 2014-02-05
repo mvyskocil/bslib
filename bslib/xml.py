@@ -1,3 +1,6 @@
+#encoding: utf-8
+from __future__ import print_function
+from __future__ import unicode_literals
 
 from collections import namedtuple
 from functools import partial
@@ -339,10 +342,14 @@ class Request:
         check_tag_name(root, "request")
 
         reqid = get_attr(root, "id")
+        _throw = True
         try:
             reqid = int(reqid)
+            _throw = False
         except ValueError:
-            raise ValueError("numeric reqid attribute expected in element 'request'") from None
+            pass
+        if _throw:
+            raise ValueError("numeric reqid attribute expected in element 'request'")# from None
 
         title = get_text_from_subtag(root, "title")
         description = get_text_from_subtag(root, "description")
@@ -382,10 +389,14 @@ class Collection:
         check_tag_name(root, "collection")
 
         matches = get_attr(root, "matches")
+        _throw = True
         try:
             matches = int(matches)
+            _throw = False
         except ValueError:
-            raise ValueError("numeric matches attribute expected in element 'collection'") from None
+            pass
+        if _throw:
+            raise ValueError("numeric matches attribute expected in element 'collection'")# from None
 
         xml_elements = [el for el in root]
         if matches != len(xml_elements):

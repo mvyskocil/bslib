@@ -1,13 +1,23 @@
-import types
-import collections.abc
-import configparser
+#encoding: utf-8
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import copy
 from collections import deque
 
+try:
+    from collections.abc import Mapping
+    from types import SimpleNamespace
+    from configparser import ConfigParser
+except ImportError:
+    from collections import Mapping
+    from ._compat import SimpleNamespace
+    from ._compat import ConfigParser3 as ConfigParser
+
 from .utils import is_url, passx_decode
 
-class BSConfig(types.SimpleNamespace, collections.abc.Mapping):
+class BSConfig(SimpleNamespace, Mapping):
 
     """
     Provides property and dictionary access to config values. Nested
@@ -52,7 +62,7 @@ class BSConfig(types.SimpleNamespace, collections.abc.Mapping):
         st_mode =os.stat(path).st_mode 
         if st_mode & 0x0fff != 0o600:
             raise Exception("Bad permission of `{}', expected 0o600, got {}".format(path, oct(st_mode)))
-        cfg = configparser.ConfigParser()
+        cfg = ConfigParser()
         with open(path, "rt") as fp:
             cfg.read_file(fp, source=path)
         # remove crufty default section

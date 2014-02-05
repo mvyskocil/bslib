@@ -1,6 +1,10 @@
+#encoding: utf-8
+
 #
 # bslib - raw api access 
 #
+from __future__ import print_function
+from __future__ import unicode_literals
 
 """
 This module provides raw access to Open Build Service API.

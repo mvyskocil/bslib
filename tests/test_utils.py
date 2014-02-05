@@ -1,8 +1,16 @@
+#encoding: utf-8
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import pytest
 
 import ssl
-from urllib.request import HTTPSHandler, HTTPCookieProcessor
-from http.cookiejar import CookieJar
+try:
+    from urllib.request import HTTPSHandler, HTTPCookieProcessor
+    from http.cookiejar import CookieJar
+except ImportError:
+    from urllib2 import HTTPSHandler, HTTPCookieProcessor
+    from cookielib import CookieJar
 
 from bslib.utils import *
 
@@ -44,12 +52,13 @@ def test_build_opener():
 
     assert isinstance(opener.handlers[6], HTTPSHandler)
 
-    ctx = opener.handlers[6]._context
-    
-    assert ctx.verify_mode == ssl.CERT_REQUIRED
-    assert ctx.protocol == ssl.PROTOCOL_SSLv23
-    #test if sslv2 support was realy disables
-    assert ctx.options == ctx.options | ssl.OP_NO_SSLv2
+    if hasattr(ssl, "SSLContext"):
+        ctx = opener.handlers[6]._context
+        
+        assert ctx.verify_mode == ssl.CERT_REQUIRED
+        assert ctx.protocol == ssl.PROTOCOL_SSLv23
+        #test if sslv2 support was realy disables
+        assert ctx.options == ctx.options | ssl.OP_NO_SSLv2
 
     assert isinstance(opener.handlers[7], HTTPCookieProcessor)
     assert isinstance(opener.handlers[7].cookiejar, CookieJar)

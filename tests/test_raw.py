@@ -1,4 +1,9 @@
+#encoding: utf-8
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import pytest
+import sys
 from io import BytesIO
 
 import bslib.raw
@@ -38,8 +43,6 @@ def test_basic_requests(raw_return_string):
     assert GET_request_id(ctx, 11) == ("GET", "{}/request/11".format(apiurl))
     #it is OK to pass an incorrect argument, as functions does not do any checking
     assert GET_request_id(ctx, "joe") == ("GET", "{}/request/joe".format(apiurl))
-    #tests- if quote is used on argument
-    assert GET_request_id(ctx, "žluť") == ("GET", "{}/request/%C5%BElu%C5%A5".format(apiurl))
     #tests POST
     assert POST_request_id_cmddiff(ctx, 11) == ("POST", "{}/request/11?cmd=diff".format(apiurl), None)
     comment = BytesIO(b"comment")
@@ -49,6 +52,14 @@ def test_basic_requests(raw_return_string):
     def x(ctx, arg=42): pass
 
     assert x(ctx, ) == ("PUT", "{}/method/?arg=42".format(apiurl))
+
+@pytest.mark.xfail(sys.version_info < (3,3), reason="FIXME:different unicode/str handling in python2")
+def test_unicode_requests(raw_return_string):
+    global ctx
+    apiurl = ctx.apiurl
+
+    #tests- if quote is used on argument
+    assert GET_request_id(ctx, u"žluť") == ("GET", "{}/request/%C5%BElu%C5%A5".format(apiurl))
 
 def test_error_requests(raw_return_string):
     

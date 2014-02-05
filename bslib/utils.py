@@ -1,13 +1,26 @@
+#encoding: utf-8
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import bz2
 import base64
 import os
 import ssl
 
-from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
-from urllib.request import HTTPBasicAuthHandler, HTTPPasswordMgrWithDefaultRealm, HTTPSHandler, ProxyHandler, proxy_bypass, HTTPCookieProcessor
-from urllib.request import build_opener as _build_opener
-from http.cookiejar import LWPCookieJar, CookieJar
-from inspect import signature, _empty, _POSITIONAL_OR_KEYWORD
+try:
+    from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
+    from urllib.request import HTTPBasicAuthHandler, HTTPPasswordMgrWithDefaultRealm, HTTPSHandler, ProxyHandler, proxy_bypass, HTTPCookieProcessor
+    from urllib.request import build_opener as _build_opener
+    from http.cookiejar import LWPCookieJar, CookieJar
+    from inspect import signature, _empty, _POSITIONAL_OR_KEYWORD
+except ImportError:
+    from urlparse import parse_qs, urlsplit, urlunsplit
+    from urllib import urlencode, quote
+    from urllib2 import HTTPBasicAuthHandler, HTTPPasswordMgrWithDefaultRealm, HTTPSHandler, ProxyHandler, proxy_bypass, HTTPCookieProcessor
+    from urllib2 import build_opener as _build_opener
+    from cookielib import LWPCookieJar, CookieJar
+    from funcsigs import signature, _empty, _POSITIONAL_OR_KEYWORD
+    from ._compat import bytes
 
 def passx_decode(passx):
     """decode the obfuscated plain text password, returns plain text password"""
@@ -32,20 +45,20 @@ def build_opener(apiurl, user, password, cookie_path, debuglevel=0, capath=None,
       * proxyhandler which respects no_proxy variable
     """
 
-    authhandler = HTTPBasicAuthHandler(
-        HTTPPasswordMgrWithDefaultRealm())
-    authhandler.add_password(None, apiurl, bytes(user, "utf-8"), bytes(password, "ascii"))
+    handlers = list()
 
-    #allow only sslv3 and tlsv1, but not sslv2
-    ctx = ssl.SSLContext(protocol=ssl.PROTOCOL_SSLv23)
-    ctx.options |= ssl.OP_NO_SSLv2
-    ctx.verify_mode = ssl.CERT_REQUIRED
-    ctx.set_default_verify_paths()
-    if cafile or capath:
-        if ctx.load_verify_locations(capath=capath, cafile=cafile) != -1:
-            raise Exception("load_verify_locations failed for capath={}, cafile={}".format(capath, cafile))
-    #TODO: debuglevel
-    httpshandler = HTTPSHandler(debuglevel=debuglevel, context=ctx, check_hostname=True)
+    if hasattr(ssl, "SSLContext"):
+        #allow only sslv3 and tlsv1, but not sslv2
+        ctx = ssl.SSLContext(protocol=ssl.PROTOCOL_SSLv23)
+        ctx.options |= ssl.OP_NO_SSLv2
+        ctx.verify_mode = ssl.CERT_REQUIRED
+        ctx.set_default_verify_paths()
+        if cafile or capath:
+            if ctx.load_verify_locations(capath=capath, cafile=cafile) != -1:
+                raise Exception("load_verify_locations failed for capath={}, cafile={}".format(capath, cafile))
+        #TODO: debuglevel
+        httpshandler = HTTPSHandler(debuglevel=debuglevel, context=ctx, check_hostname=True)
+        handlers.append(httpshandler)
 
     try:
     # TODO is this correct?
@@ -58,18 +71,21 @@ def build_opener(apiurl, user, password, cookie_path, debuglevel=0, capath=None,
         except:
             #TODO: log it
             cookiejar = CookieJar()
+    handlers.append(HTTPCookieProcessor(cookiejar))
+    
+    authhandler = HTTPBasicAuthHandler(
+        HTTPPasswordMgrWithDefaultRealm())
+    authhandler.add_password(None, apiurl, bytes(user, "utf-8"), bytes(password, "ascii"))
+    handlers.append(authhandler)
 
     # proxy handling
     if not proxy_bypass(apiurl):
         proxyhandler = ProxyHandler()
     else:
         proxyhandler = ProxyHandler({})
+    handlers.append(proxyhandler)
 
-    opener = _build_opener(
-        httpshandler,
-        HTTPCookieProcessor(cookiejar),
-        authhandler,
-        proxyhandler)
+    opener = _build_opener(*handlers)
     from bslib import __version__
     opener.addheaders = [("User-agent", "bslib/{}".format(__version__)), ]
     for h in headers:

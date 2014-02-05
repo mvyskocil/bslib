@@ -1,9 +1,13 @@
+#encoding: utf-8
+
 #
 # bslib - open build service client library
 #
 # Copyright (c) 2013 Michal Vyskocil<michal.vyskocil@gmail.com>
 # Licensed under MIT
 #
+from __future__ import print_function
+from __future__ import unicode_literals
 
 """Open Build Service client library
 
