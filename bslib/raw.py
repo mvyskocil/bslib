@@ -22,25 +22,43 @@ from functools import wraps
 
 from .utils import is_url, inspect_signature, apply_urltemplate
 
+try:
+    from urllib.parse import urlencode
+    from urllib.request import Request
+except ImportError:
+    from urllib import urlencode
+    from urllib2 import Request
+
 def raw(ctx, method, url, datafp=None):
     """Do the raw http method call on url."""
+        
+    if method not in ("GET", "POST", "PUT", "DELETE"):
+        raise ValueError("HTTP method '{}' is not known".format(method))
+    
+    if method in ("PUT", "DELETE"):
+        raise NotImplementedError("HTTP method '{}' is not yet implemented".format(method))
     
     #TODO: we need a real debugging
     print("DEBUG: {} {}".format(method, url))
-    if method == "GET":
-        resp = ctx.opener.open(url)
-        if resp.getcode() != 200:
-            raise NotImplementedError("non 200 responses are not yet implemented")
-    elif method == "POST":
-        resp = ctx.opener.open(url, data=datafp.read() if datafp is not None else None)
-        if resp.getcode() != 200:
-            raise NotImplementedError("non 200 responses are not yet implemented")
-    elif method in ("PUT", "DELETE"):
-        raise NotImplementedError("HTTP method '{}' is not yet implemented".format(method))
-    else:
-        raise ValueError("HTTP method '{}' is not known".format(method))
 
-    return resp
+    data = None
+    
+    request = Request(url)
+    if hasattr(request, method):
+        request.method = method
+    else:
+        request.get_method = lambda: method
+
+    if method == "POST":
+        data = datafp.read() if datafp is not None else b""
+        request.add_header("Content-Type", "application/octet-stream")
+        
+    response = ctx.opener.open(request, data)
+
+    if response.getcode() != 200:
+        raise NotImplementedError("non 200 responses are not yet implemented")
+    
+    return response
 
 def api(template):
     """This is quite magic decorator (but which one does not?), thus is worth
