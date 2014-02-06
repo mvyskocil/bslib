@@ -6,6 +6,7 @@ import bz2
 import base64
 import os
 import ssl
+from collections import OrderedDict
 
 try:
     from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
@@ -131,3 +132,94 @@ def apply_urltemplate(template, kwdct):
             query[k] = newv
     foo['query'] = urlencode(query, doseq=True)
     return urlunsplit(st._replace(**foo))
+
+def coroutine(func):
+    """http://www.dabeaz.com/coroutines/coroutine.py
+    A decorator function that takes care of starting a coroutine
+    automatically on call."""
+
+    def start(*args,**kwargs):
+        cr = func(*args,**kwargs)
+        next(cr)
+        return cr
+    return start
+
+def cat(fp, target):
+    """Like unix cat, just send numbered lines from fp to target"""
+    for i, line in enumerate(fp):
+        target.send((i+1, line))
+
+@coroutine
+def co_parse_obs_diff(target):
+    """Parse the OBS diff format and send tuple (key, line) to target"""
+    while True:
+        num, line = (yield)
+        if line.startswith("old:") or line.startswith("new:") or line.startswith("other changes:") or line.startswith("++++++ deleted files:"):
+            key = line.strip()
+            num, line = (yield)
+            if not line.startswith("----"):
+                raise SyntaxError("On line {}: the '----' expected, found {}".format(num, line))
+            while True:
+                num, line = (yield)
+                if line == '\n':
+                    break
+                target.send((key, line.strip()))
+        elif line.startswith("++++++ new changes file:"):
+            #XXX: ignore that crap
+            continue
+        elif line.startswith("++++++ new spec file:"):
+            continue
+        elif line.startswith("++++++ "):
+            num, next_line = (yield)
+            if next_line.startswith("--- "):
+                break
+            while True:
+                target.send(("rest:", line.strip()))
+                num, line = (yield)
+                if not line.startswith("++++++ "):
+                    break
+        elif line.startswith("+++ "):
+            key = line[4:].strip()
+            num, line = (yield)
+            if line[:3] != "@@ ":
+                raise SyntaxError("On line {} hunk delimiter expected, got {}".format(num, line))
+            target.send((key, line))
+            while True:
+                num, line = (yield)
+                #XXX: OBS does generate a diffs w/o empty space sometimes
+                if line == '\n' or line.startswith("--- "):
+                    break
+                if line.startswith("Index: "):
+                    num, line = (yield)
+                    if not line.startswith("=========="):
+                        raise SyntaxError("On line {}: the '========' expected after 'Index: ', found {}".format(num, line))
+                    break
+                if line[0] not in (' ', '+', '-') and line[:3] != "@@ ":
+                    raise SyntaxError("On line {}: wrong initial character or hunk delimiter, got '{}'".format(num, line))
+                target.send((key, line))
+
+@coroutine
+def co_diff2dict(dct):
+    """Read key, value tuple and add that to mapping object dct"""
+    while True:
+        key, value = (yield)
+        try:
+            dct[key].append(value)
+        except KeyError:
+            dct[key] = list()
+            dct[key].append(value)
+
+def diff_to_dict(fp, _klass=OrderedDict):
+    """Return diff as a mapping object (OrderedDict instance by default), where keys are
+    file names and values are hunks related to them.
+
+    This makes a bridge between coroutines and normal routines ...
+    """
+    dct = _klass()
+    try:
+        cat(fp, co_parse_obs_diff(
+            co_diff2dict(
+                dct)))
+    except StopIteration:
+        pass
+    return dct

@@ -5,6 +5,9 @@ from __future__ import unicode_literals
 import pytest
 
 import ssl
+import os
+from io import StringIO
+
 try:
     from urllib.request import HTTPSHandler, HTTPCookieProcessor
     from http.cookiejar import CookieJar
@@ -13,6 +16,11 @@ except ImportError:
     from cookielib import CookieJar
 
 from bslib.utils import *
+
+def _abspath(name):
+    return os.path.join(
+        os.path.split(__file__)[0],
+        name)
 
 def test_passx_encode_decode():
     passwd = 'abcde'
@@ -90,3 +98,58 @@ def test_applyurltemplate():
 
     # to emphasize, apply_urltemplate does not call is_url (yet)
     assert apply_urltemplate("blah{blah}blah", {"blah" : "X"}) == "blahXblah"
+
+def test_diff_to_dct_1():
+    KEYS = ('MozillaFirefox.changes', 'old:', 'new:', 'MozillaFirefox.spec', 'rest:', 'create-tar.sh', 'firefox-kde.patch')
+    LENS = (36, 4, 3, 79, 4, 33, 157)
+
+    with open(_abspath("diff1.diff"), "rt") as fp:
+        diff = diff_to_dict(fp)
+
+    assert len(diff.keys()) == 7
+    assert tuple(diff.keys()) == KEYS
+
+    for key, ln in zip(KEYS, LENS):
+        assert len(diff[key]) == ln
+
+    assert diff["old:"] ==  \
+    ['compare-locales.tar.bz2', 'firefox-26.0-source.tar.bz2', 'l10n-26.0.tar.bz2', 'mozilla-bug929439.patch']
+
+def test_diff_to_dct_2():
+    with open(_abspath("diff2.diff"), "rt") as fp:
+        diff = diff_to_dict(fp)
+
+    assert len(diff.keys()) == 32
+    #do we need to test more here?
+
+def test_diff_to_dct_3():
+    diff = StringIO(u"""
+old:
+####
+""")
+    with pytest.raises(SyntaxError):
+        diff_to_dict(diff)
+
+    diff = StringIO(u"""
++++ foo.spec
+@@@ garbled
+""")
+    with pytest.raises(SyntaxError):
+        diff_to_dict(diff)
+    
+    diff = StringIO(u"""
++++ foo.spec
+@@ -1,2 4,3 @@
+Index: blah blah
+#g@r%b!3d&
+""")
+    with pytest.raises(SyntaxError):
+        diff_to_dict(diff)
+    
+    diff = StringIO(u"""
++++ foo.spec
+@@ -1,2 4,3 @@
+# this is a comment!
+""")
+    with pytest.raises(SyntaxError):
+        diff_to_dict(diff)
