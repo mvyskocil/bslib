@@ -153,3 +153,8 @@ Index: blah blah
 """)
     with pytest.raises(SyntaxError):
         diff_to_dict(diff)
+
+def test_diff_to_dct_4():
+    diff = "some string"
+    with pytest.raises(ValueError):
+        diff_to_dict(diff)

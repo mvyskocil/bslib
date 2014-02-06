@@ -149,6 +149,8 @@ def coroutine(func):
 
 def cat(fp, target):
     """Like unix cat, just send numbered lines from fp to target"""
+    if isinstance(fp, str):
+        raise ValueError("Type str is not supported!")
     for i, line in enumerate(fp):
         target.send((i+1, line))
 

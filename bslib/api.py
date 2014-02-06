@@ -20,7 +20,7 @@ def get_request(ctx, reqid, diff=False):
     request = Request.fromxml(
         ET.fromstring(resp.read()))
     if diff:
-        request.diff = resp_d.read()
+        request.diff = resp_d.readlines()
 
     return request
 
