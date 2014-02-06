@@ -23,6 +23,9 @@ except ImportError:
     from funcsigs import signature, _empty, _POSITIONAL_OR_KEYWORD
     from ._compat import bytes
 
+__all__ = ["passx_decode", "passx_encode", "is_url", "build_opener", "inspect_signature",
+"apply_urltemplate", "coroutine", "diff_to_dict"]
+
 def passx_decode(passx):
     """decode the obfuscated plain text password, returns plain text password"""
     return bz2.decompress(base64.b64decode(passx.encode("ascii"))).decode("ascii")
