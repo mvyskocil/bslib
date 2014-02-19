@@ -165,3 +165,6 @@ def GET_build_project_package_file(ctx, project, package, repository, arch, file
     """returns the build-related file of given project/package/repository/arch"""
     pass
 
+@api("GET {apiurl}/comments/request/{reqid}")
+def GET_comments_request(ctx, reqid):
+    """returns the comments for given request id"""

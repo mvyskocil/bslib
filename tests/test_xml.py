@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import pytest
 
 from xml.etree import cElementTree as ET
-from bslib.xml import Request, Collection, Result, ResultList, StatusElement
+from bslib.xml import Request, Collection, Result, ResultList, StatusElement, Comments
 
 import os.path
 
@@ -63,3 +63,19 @@ def test_mandatory_attrs_variables():
 
     assert h._mandatory_attrs == ("name", )
     assert h._attrs == ("who", "when")
+
+def test_comments():
+    comments = Comments.fromxml(ET.parse(_a("comments.xml")).getroot())
+
+    assert comments.comment_for == {"request" : "221303"}
+    assert len(comments.comments) == 3
+
+    c = comments.comments
+    assert c[1]._asdict() == {
+        "who" : "coolo",
+        "when" : "2014-02-11 09:52:47 UTC",
+        "id"  : "1167",
+        "parent" : "1166",
+        "text" : "Conflicts: yast2-installation < THEONE"}
+
+

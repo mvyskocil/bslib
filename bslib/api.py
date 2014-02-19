@@ -8,19 +8,25 @@ from __future__ import absolute_import
 from collections import namedtuple
 
 from xml.etree import cElementTree as ET
-from .raw import GET_request_id, POST_request_id_cmddiff, GET_build_project_result, GET_build_project_package_buildlog, GET_request_collection
-from .xml import Request, ResultList, Collection
+from .raw import GET_request_id, POST_request_id_cmddiff, GET_build_project_result, GET_build_project_package_buildlog, GET_request_collection, GET_comments_request
+from .xml import Request, ResultList, Collection, Comments
 
-def get_request(ctx, reqid, diff=False):
+def get_request(ctx, reqid, diff=False, comments=False):
 
     resp = GET_request_id(ctx, reqid)
     if diff:
         resp_d = POST_request_id_cmddiff(ctx, reqid)
+    if comments:
+        resp_c = GET_comments_request(ctx, reqid)
 
     request = Request.fromxml(
         ET.fromstring(resp.read()))
     if diff:
         request.diff = resp_d.readlines()
+
+    if comments:
+        request.comments = Comments.fromxml(
+            ET.fromstring(resp_c.read()))
 
     return request
 

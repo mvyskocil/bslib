@@ -31,7 +31,7 @@ def get_text_from_subtag(root, tag_name):
         return None
     return foo.text.strip()
 
-def abstract_fromxml(tag_name, mandatory_attrs, attrs, has_comment, cls, root):
+def abstract_fromxml(tag_name, mandatory_attrs, attrs, has_comment, has_text, cls, root):
     """This is a helper function, which parses sagegiven tag name, check mandatory
     and other attributes and return given cls. API might be considered as awkward,
     but this is abstract function and instances made by functools.partial does
@@ -50,6 +50,7 @@ def abstract_fromxml(tag_name, mandatory_attrs, attrs, has_comment, cls, root):
     :param attrs: list of other attributes, defaults to empty list
     :param has_comment: a quirk for elements does have <comment></comment>
                          subelement, defaults to False
+    :param has_text: if True, add element's text to text argument, defaults to False
     :param cls: class, which __init__ function will be called and which instance
                 will be returned
     :param root: root element to be processed
@@ -69,9 +70,12 @@ def abstract_fromxml(tag_name, mandatory_attrs, attrs, has_comment, cls, root):
     if has_comment:
         kwargs["comment"] = get_text_from_subtag(root, "comment")
 
+    if has_text:
+        kwargs["text"] = root.text
+
     return cls(**kwargs)
 
-def make_klass(klass_name, tag_name, fromxml_method, mandatory_attrs, attrs=(), has_comment=False):
+def make_klass(klass_name, tag_name, fromxml_method, mandatory_attrs, attrs=(), has_comment=False, has_text=False):
     """Constructs a klass (named tuple) with given name
     for specific tag, it does bind an instance of
     ``abstract_fromxml`` to it, so all klasses does
@@ -89,10 +93,12 @@ def make_klass(klass_name, tag_name, fromxml_method, mandatory_attrs, attrs=(), 
     attrlist = list(mandatory_attrs)
     if has_comment:
         attrlist.append("comment")
+    if has_text:
+        attrlist.append("text")
     attrlist.extend(attrs)
 
     nt = namedtuple(klass_name, ", ".join(attrlist))
-    fromxml = partial(fromxml_method, tag_name, mandatory_attrs, attrs, has_comment, nt)
+    fromxml = partial(fromxml_method, tag_name, mandatory_attrs, attrs, has_comment, has_text, nt)
     nt.fromxml = fromxml
     nt._mandatory_attrs = mandatory_attrs
     nt._attrs = attrs
@@ -326,7 +332,7 @@ class RequestAction:
 
 class Request:
 
-    def __init__(self, reqid, title, description, state, accept_at, actions, reviews, history, diff=None):
+    def __init__(self, reqid, title, description, state, accept_at, actions, reviews, history, diff=None, comments=None):
         self.reqid = reqid
         self.title = title
         self.description = description
@@ -336,6 +342,7 @@ class Request:
         self.reviews = reviews
         self.history = history
         self.diff = diff
+        self.comments = comments
 
     @classmethod
     def fromxml(cls, root):
@@ -482,5 +489,37 @@ class ResultList:
     def __getitem__(self, idx):
         return self.resultlist.__getitem__(idx)
 
-
 ### RESULT AND RESULTLIST TAG END ###
+
+### COMMENTS BEGIN ###
+Comment = make_klass("Comment",
+    tag_name = "comment",
+    fromxml_method = abstract_fromxml,
+    mandatory_attrs = ("who", "when", "id"),
+    attrs = ("parent", ),
+    has_text = True,
+    )
+
+class Comments:
+
+    def __init__(self, comment_for, comments):
+        self.comment_for = comment_for
+        self.comments = comments
+
+    @classmethod
+    def fromxml(cls, root):
+        check_tag_name(root, "comments")
+
+        value = None
+        for attr in ("request", "project", "package"):
+            value = get_attr(root, attr)
+            if value is not None:
+                break
+
+        if value is None:
+            raise ValueError("one of request, project, package attributes expected in tag comments")
+
+        comments = [Comment.fromxml(el) for el in root]
+        return cls(
+            {attr : value},
+            comments)
