@@ -94,6 +94,8 @@ def make_klass(klass_name, tag_name, fromxml_method, mandatory_attrs, attrs=(), 
     nt = namedtuple(klass_name, ", ".join(attrlist))
     fromxml = partial(fromxml_method, tag_name, mandatory_attrs, attrs, has_comment, nt)
     nt.fromxml = fromxml
+    nt._mandatory_attrs = mandatory_attrs
+    nt._attrs = attrs
     return nt
 
 ### REQUEST TAG BEGIN ###

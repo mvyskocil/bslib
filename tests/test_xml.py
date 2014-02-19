@@ -53,3 +53,13 @@ def test_resultlist_from_apidocs():
     st = res.statuslist[0]
     assert isinstance(st, StatusElement)
     assert st.package == "gpg2"
+
+def test_mandatory_attrs_variables():
+    rq = Request.fromxml(ET.parse(_a("request.xml")).getroot())
+
+    h = rq.history[0]
+    assert hasattr(h, "_mandatory_attrs")
+    assert hasattr(h, "_attrs")
+
+    assert h._mandatory_attrs == ("name", )
+    assert h._attrs == ("who", "when")
