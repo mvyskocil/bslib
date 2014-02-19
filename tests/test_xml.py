@@ -7,9 +7,17 @@ import pytest
 from xml.etree import cElementTree as ET
 from bslib.xml import Request, Collection, Result, ResultList, StatusElement
 
+import os.path
+
+def _a(path):
+    return os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)),
+        path)
+
 #TBD: this is uterly incomplete!!!
 def test_request_from_apidocs():
-    rq = Request.fromxml(ET.parse("apidocs/api.opensuse.org/apidocs/request.xml").getroot())
+    rq = Request.fromxml(ET.parse(_a("request.xml")).getroot())
 
     assert rq.reqid == 12
     assert rq.title == "Kraft"
@@ -21,7 +29,7 @@ def test_request_from_apidocs():
     assert len(rq.history) == 2
 
 def test_collection_from_apidocs():
-    cl = Collection.fromxml(ET.parse("apidocs/collection.xml").getroot())
+    cl = Collection.fromxml(ET.parse(_a("collection.xml")).getroot())
 
     assert len(cl) == 2
     assert cl[0] != cl[1]
@@ -33,7 +41,7 @@ def test_collection_from_apidocs():
         assert isinstance(el, Request)
 
 def test_resultlist_from_apidocs():
-    rl = ResultList.fromxml(ET.parse("apidocs/pkgresult.xml").getroot())
+    rl = ResultList.fromxml(ET.parse(_a("pkgresult.xml")).getroot())
 
     assert len(rl) == 18
     assert isinstance(rl[0], Result)

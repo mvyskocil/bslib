@@ -1,0 +1,24 @@
+<collection matches="2">
+  <request id="214470">
+  <action type="submit">
+    <source project="home:mvyskocil" package="python3-sh" rev="1"/>
+    <target project="devel:languages:python3" package="python3-sh"/>
+  </action>
+  <state name="declined" who="posophe" when="2014-01-20T19:12:45">
+    <comment>Please fix Group : Development/Languages/Python</comment>
+  </state>
+  <history name="new" who="mvyskocil" when="2014-01-20T09:00:41"/>
+  <description/>
+</request>
+  <request id="214471">
+  <action type="submit">
+    <source project="home:mvyskocil" package="python-sh" rev="2"/>
+    <target project="devel:languages:python" package="python-sh"/>
+  </action>
+  <state name="declined" who="posophe" when="2014-01-20T19:14:34">
+    <comment>Please fix Group : Development/Languages/Python</comment>
+  </state>
+  <history name="new" who="mvyskocil" when="2014-01-20T09:03:01"/>
+  <description/>
+</request>
+</collection>

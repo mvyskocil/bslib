@@ -1,0 +1,56 @@
+<resultlist state="87adf1b4cfc71732d66851f298895528">
+  <result project="Base:System" repository="openSUSE_Factory_PowerPC" arch="ppc" code="finished" state="finished">
+    <status package="gpg2" code="succeeded" />
+  </result>
+  <result project="Base:System" repository="openSUSE_Factory_PowerPC" arch="ppc64" code="finished" state="finished">
+    <status package="gpg2" code="succeeded" />
+  </result>
+  <result project="Base:System" repository="openSUSE_Factory_ARM" arch="aarch64" code="building" state="building">
+    <status package="gpg2" code="scheduled" />
+  </result>
+  <result project="Base:System" repository="openSUSE_Factory_ARM" arch="armv7l" code="building" state="building">
+    <status package="gpg2" code="succeeded" />
+  </result>
+  <result project="Base:System" repository="openSUSE_Factory" arch="x86_64" code="building" state="building">
+    <status package="gpg2" code="succeeded" />
+  </result>
+  <result project="Base:System" repository="openSUSE_Factory" arch="i586" code="published" state="published">
+    <status package="gpg2" code="succeeded" />
+  </result>
+  <result project="Base:System" repository="openSUSE_13.1" arch="i586" code="building" state="building">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="openSUSE_13.1" arch="x86_64" code="finished" state="finished">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="openSUSE_12.3" arch="i586" code="finished" state="finished">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="openSUSE_12.3" arch="x86_64" code="finished" state="finished">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="openSUSE_12.2_standard" arch="x86_64" code="published" state="published">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="openSUSE_12.2_standard" arch="i586" code="published" state="published">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="SLE_11_SP3" arch="i586" code="published" state="published">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="SLE_11_SP3" arch="x86_64" code="published" state="published">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="SLE_11_SP3" arch="ppc64" code="published" state="published">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="SLE_11_SP2" arch="i586" code="published" state="published">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="SLE_11_SP2" arch="x86_64" code="published" state="published">
+    <status package="gpg2" code="disabled" />
+  </result>
+  <result project="Base:System" repository="SLE_11_SP2" arch="ppc64" code="published" state="published">
+    <status package="gpg2" code="disabled" />
+  </result>
+</resultlist>
