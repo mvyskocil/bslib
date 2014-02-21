@@ -1,8 +1,10 @@
 #encoding: utf-8
 
-#
+
 # bslib - raw api access 
-#
+# Copyright (c) 2014 Michal Vyskocil<michal.vyskocil@gmail.com>
+# Licensed under MIT, see bslib/__init__.py
+
 from __future__ import print_function
 from __future__ import unicode_literals
 

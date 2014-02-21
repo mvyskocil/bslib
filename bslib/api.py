@@ -1,6 +1,9 @@
 #encoding: utf-8
 
 # high level api for bslib
+# Copyright (c) 2014 Michal Vyskocil<michal.vyskocil@gmail.com>
+# Licensed under MIT, see bslib/__init__.py
+
 from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import absolute_import

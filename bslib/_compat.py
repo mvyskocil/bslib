@@ -1,4 +1,7 @@
-# compatibility for python2
+
+# bslib's python2 compatibility
+# Copyright (c) 2014 Michal Vyskocil<michal.vyskocil@gmail.com>
+# Licensed under MIT, see bslib/__init__.py
 
 import codecs
 from ConfigParser import ConfigParser
