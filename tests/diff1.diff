@@ -1,0 +1,898 @@
+
+changes files:
+--------------
+--- MozillaFirefox.changes
++++ MozillaFirefox.changes
+@@ -1,0 +2,35 @@
++Tue Jan 28 15:45:41 UTC 2014 - wr@rosenauer.org
++
++- update to Firefox 27.0 (bnc#861847)
++  * MFSA 2014-01/CVE-2014-1477/CVE-2014-1478
++    Miscellaneous memory safety hazards (rv:27.0 / rv:24.3)
++  * MFSA 2014-02/CVE-2014-1479 (bmo#911864)
++    Clone protected content with XBL scopes
++  * MFSA 2014-03/CVE-2014-1480 (bmo#916726)
++    UI selection timeout missing on download prompts
++  * MFSA 2014-04/CVE-2014-1482 (bmo#943803)
++    Incorrect use of discarded images by RasterImage
++  * MFSA 2014-05/CVE-2014-1483 (bmo#950427)
++    Information disclosure with *FromPoint on iframes
++  * MFSA 2014-06/CVE-2014-1484 (bmo#953993)
++    Profile path leaks to Android system log
++  * MFSA 2014-07/CVE-2014-1485 (bmo#910139)
++    XSLT stylesheets treated as styles in Content Security Policy
++  * MFSA 2014-08/CVE-2014-1486 (bmo#942164)
++    Use-after-free with imgRequestProxy and image proccessing
++  * MFSA 2014-09/CVE-2014-1487 (bmo#947592)
++    Cross-origin information leak through web workers
++  * MFSA 2014-10/CVE-2014-1489 (bmo#959531)
++    Firefox default start page UI content invokable by script
++  * MFSA 2014-11/CVE-2014-1488 (bmo#950604)
++    Crash when using web workers with asm.js
++  * MFSA 2014-12/CVE-2014-1490/CVE-2014-1491
++    (bmo#934545, bmo#930874, bmo#930857)
++    NSS ticket handling issues
++  * MFSA 2014-13/CVE-2014-1481(bmo#936056)
++    Inconsistent JavaScript handling of access to Window objects
++- requires NSS 3.15.4 or higher
++- rebased/reworked patches
++- removed obsolete mozilla-bug929439.patch
++
++-------------------------------------------------------------------
+
+old:
+----
+  compare-locales.tar.bz2
+  firefox-26.0-source.tar.bz2
+  l10n-26.0.tar.bz2
+  mozilla-bug929439.patch
+
+new:
+----
+  compare-locales.tar.xz
+  firefox-27.0-source.tar.xz
+  l10n-27.0.tar.xz
+
+spec files:
+-----------
+--- MozillaFirefox.spec
++++ MozillaFirefox.spec
+@@ -2,7 +2,7 @@
+ # spec file for package MozillaFirefox
+ #
+ # Copyright (c) 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
+-#               2006-2013 Wolfgang Rosenauer
++#               2006-2014 Wolfgang Rosenauer
+ #
+ # All modifications and additions to the file contributed by third parties
+ # remain the property of their copyright owners, unless otherwise agreed
+@@ -17,7 +17,7 @@
+ #
+ 
+ 
+-%define major 26
++%define major 27
+ %define mainver %major.0
+ %define update_channel release
+ 
+@@ -51,7 +51,7 @@
+ BuildRequires:  wireless-tools
+ %endif
+ BuildRequires:  mozilla-nspr-devel >= 4.10.2
+-BuildRequires:  mozilla-nss-devel >= 3.15.3.1
++BuildRequires:  mozilla-nss-devel >= 3.15.4
+ BuildRequires:  nss-shared-helper-devel
+ %if %suse_version > 1210
+ BuildRequires:  pkgconfig(gstreamer-%gstreamer_ver)
+@@ -63,7 +63,7 @@
+ %endif
+ Version:        %{mainver}
+ Release:        0
+-%define         releasedate 2013120700
++%define         releasedate 2014012800
+ Provides:       firefox = %{mainver}
+ Provides:       firefox = %{version}-%{release}
+ Provides:       web_browser
+@@ -76,17 +76,17 @@
+ License:        MPL-2.0
+ Group:          Productivity/Networking/Web/Browsers
+ Url:            http://www.mozilla.org/
+-Source:         firefox-%{version}-source.tar.bz2
++Source:         firefox-%{version}-source.tar.xz
+ Source1:        MozillaFirefox.desktop
+ Source2:        MozillaFirefox-rpmlintrc
+ Source3:        mozilla.sh.in
+ Source4:        find-external-requires.sh
+ Source5:        source-stamp.txt
+ Source6:        kde.js
+-Source7:        l10n-%{version}.tar.bz2
++Source7:        l10n-%{version}.tar.xz
+ Source8:        firefox-mimeinfo.xml
+ Source9:        firefox.js
+-Source10:       compare-locales.tar.bz2
++Source10:       compare-locales.tar.xz
+ Source11:       firefox.1
+ Source12:       mozilla-get-app-id
+ Source13:       add-plugins.sh.in
+@@ -105,10 +105,9 @@
+ Patch12:        mozilla-arm-disable-edsp.patch
+ Patch13:        mozilla-ppc.patch
+ Patch14:        mozilla-libproxy-compat.patch
+-Patch15:        mozilla-bug929439.patch
+-Patch16:        mozilla-ppc64le.patch
+-Patch17:        mozilla-libffi-ppc64le.patch
+-Patch18:        mozilla-xpcom-ppc64le.patch
++Patch15:        mozilla-ppc64le.patch
++Patch16:        mozilla-libffi-ppc64le.patch
++Patch17:        mozilla-xpcom-ppc64le.patch
+ # Firefox/browser
+ Patch30:        firefox-browser-css.patch
+ Patch31:        firefox-kde.patch
+@@ -243,7 +242,6 @@
+ %patch15 -p1
+ %patch16 -p1
+ %patch17 -p1
+-%patch18 -p1
+ #
+ %patch30 -p1
+ %if %suse_version >= 1110
+
+other changes:
+--------------
+
+++++++ compare-locales.tar.bz2 -> compare-locales.tar.xz
+
+++++++ create-tar.sh
+--- create-tar.sh
++++ create-tar.sh
+@@ -2,8 +2,8 @@
+ 
+ CHANNEL="release"
+ BRANCH="releases/mozilla-$CHANNEL"
+-RELEASE_TAG="FIREFOX_26_0_RELEASE"
+-VERSION="26.0"
++RELEASE_TAG="FIREFOX_27_0_RELEASE"
++VERSION="27.0"
+ 
+ # mozilla
+ if [ -d mozilla ]; then
+@@ -36,7 +36,7 @@
+ hg showconfig paths.default 2>/dev/null | head -n1 | sed -e "s/^ssh:/http:/" >> ../source-stamp.txt
+ popd
+ echo "creating archive..."
+-tar cjf firefox-$VERSION-source.tar.bz2 --exclude=.hgtags --exclude=.hgignore --exclude=.hg --exclude=CVS mozilla
++tar cJf firefox-$VERSION-source.tar.xz --exclude=.hgtags --exclude=.hgignore --exclude=.hg --exclude=CVS mozilla
+ 
+ # l10n
+ echo "fetching locales..."
+@@ -53,10 +53,10 @@
+   esac
+ done
+ echo "creating l10n archive..."
+-tar cjf l10n-$VERSION.tar.bz2 --exclude=.hgtags --exclude=.hgignore --exclude=.hg l10n
++tar cJf l10n-$VERSION.tar.xz --exclude=.hgtags --exclude=.hgignore --exclude=.hg l10n
+ 
+ # compare-locales
+ echo "creating compare-locales"
+ hg clone http://hg.mozilla.org/build/compare-locales
+-tar cjf compare-locales.tar.bz2 --exclude=.hgtags --exclude=.hgignore --exclude=.hg compare-locales
++tar cJf compare-locales.tar.xz --exclude=.hgtags --exclude=.hgignore --exclude=.hg compare-locales
+ 
+
+++++++ firefox-27.0-source.tar.xz (new)
+
+++++++ firefox-kde.patch
+--- firefox-kde.patch
++++ firefox-kde.patch
+@@ -2,7 +2,7 @@
+ new file mode 100644
+ --- /dev/null
+ +++ b/browser/base/content/browser-kde.xul
+-@@ -0,0 +1,1158 @@
++@@ -0,0 +1,1184 @@
+ +#filter substitution
+ +<?xml version="1.0"?>
+ +# -*- Mode: HTML -*-
+@@ -27,6 +27,7 @@
+ +<window id="main-window"
+ +        xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ +        xmlns:svg="http://www.w3.org/2000/svg"
+++        xmlns:html="http://www.w3.org/1999/xhtml"
+ +        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+ +        onload="gBrowserInit.onLoad()" onunload="gBrowserInit.onUnload()" onclose="return WindowIsClosing();"
+ +        title="&mainWindow.title;@PRE_RELEASE_SUFFIX@"
+@@ -187,6 +188,22 @@
+ +      </hbox>
+ +    </panel>
+ +
+++    <!-- UI tour experience -->
+++    <panel id="UITourTooltip"
+++           type="arrow"
+++           hidden="true"
+++           consumeoutsideclicks="false"
+++           noautofocus="true"
+++           align="start"
+++           orient="vertical"
+++           role="alert">
+++      <label id="UITourTooltipTitle" flex="1"/>
+++      <description id="UITourTooltipDescription" flex="1"/>
+++    </panel>
+++    <html:div id="UITourHighlightContainer" style="position:relative">
+++      <html:div id="UITourHighlight"></html:div>
+++    </html:div>
+++
+ +    <panel id="socialActivatedNotification"
+ +           type="arrow"
+ +           hidden="true"
+@@ -346,7 +363,11 @@
+ +        </vbox>
+ +      </hbox>
+ +      <!-- Footer button to open security page info -->
+-+      <hbox id="identity-popup-button-container" pack="end">
+++      <hbox id="identity-popup-button-container" align="center">
+++        <button id="identity-popup-help-icon"
+++               oncommand="gIdentityHandler.handleHelpCommand(event);"
+++               tooltiptext="&identity.help.tooltip;"/>
+++        <spacer flex="1"/>
+ +        <button id="identity-popup-more-info-button"
+ +                label="&identity.moreInfoLinkText;"
+ +                oncommand="gIdentityHandler.handleMoreInfoClick(event);"/>
+@@ -396,6 +417,11 @@
+ +
+ +#include popup-notifications.inc
+ +
+++    <hbox id="downloads-animation-container" mousethrough="always">
+++      <vbox id="downloads-notification-anchor">
+++        <vbox id="downloads-indicator-notification"/>
+++      </vbox>
+++    </hbox>
+ +  </popupset>
+ +
+ +#ifdef CAN_DRAW_IN_TITLEBAR
+@@ -547,7 +573,7 @@
+ +                   onclick="gPopupBlockerObserver.onReportButtonClick(event);"/>
+ +            <image id="star-button"
+ +                   class="urlbar-icon"
+-+                   onclick="BookmarkingUI.onCommand(event);"/>
+++                   onclick="if (event.button === 0) BookmarkingUI.onCommand(event);"/>
+ +            <image id="go-button"
+ +                   class="urlbar-icon"
+ +                   tooltiptext="&goEndCap.tooltip;"
+@@ -1021,7 +1047,7 @@
+ +
+ +    <splitter id="sidebar-splitter" class="chromeclass-extrachrome sidebar-splitter" hidden="true"/>
+ +    <vbox id="appcontent" flex="1">
+-+      <tabbrowser id="content" disablehistory="true"
+++      <tabbrowser id="content"
+ +                  flex="1" contenttooltip="aHTMLTooltip"
+ +                  tabcontainer="tabbrowser-tabs"
+ +                  contentcontextmenu="contentAreaContextMenu"
+@@ -1181,8 +1207,8 @@
+          content/browser/newtab/newTab.xul             (content/newtab/newTab.xul)
+  *       content/browser/newtab/newTab.js              (content/newtab/newTab.js)
+          content/browser/newtab/newTab.css             (content/newtab/newTab.css)
++         content/browser/newtab/preloaderContent.js    (content/newtab/preloaderContent.js)
+  *       content/browser/pageinfo/pageInfo.xul         (content/pageinfo/pageInfo.xul)
+-         content/browser/pageinfo/pageInfo.js          (content/pageinfo/pageInfo.js)
+ diff --git a/browser/components/build/nsModule.cpp b/browser/components/build/nsModule.cpp
+ --- a/browser/components/build/nsModule.cpp
+ +++ b/browser/components/build/nsModule.cpp
+@@ -1246,7 +1272,7 @@
+ diff --git a/browser/components/preferences/advanced.js b/browser/components/preferences/advanced.js
+ --- a/browser/components/preferences/advanced.js
+ +++ b/browser/components/preferences/advanced.js
+-@@ -23,16 +23,22 @@ var gAdvancedPane = {
++@@ -24,16 +24,22 @@ var gAdvancedPane = {
+      if (extraArgs && extraArgs["advancedTab"]){
+        advancedPrefs.selectedTab = document.getElementById(extraArgs["advancedTab"]);
+      } else {
+@@ -1269,7 +1295,7 @@
+      // when the user will select the default.  We refresh here periodically
+      // in case the default changes.  On other Windows OS's defaults can also
+      // be set while the prefs are open.
+-@@ -860,14 +866,25 @@ var gAdvancedPane = {
++@@ -903,14 +909,25 @@ var gAdvancedPane = {
+     * Set browser as the operating system default browser.
+     */
+    setDefaultBrowser: function()
+@@ -1298,7 +1324,7 @@
+ diff --git a/browser/components/shell/src/Makefile.in b/browser/components/shell/src/Makefile.in
+ --- a/browser/components/shell/src/Makefile.in
+ +++ b/browser/components/shell/src/Makefile.in
+-@@ -9,10 +9,12 @@ USE_STATIC_LIBS = 1
++@@ -8,10 +8,12 @@ USE_STATIC_LIBS = 1
+  
+  include $(topsrcdir)/config/rules.mk
+  
+@@ -1314,21 +1340,20 @@
+ diff --git a/browser/components/shell/src/moz.build b/browser/components/shell/src/moz.build
+ --- a/browser/components/shell/src/moz.build
+ +++ b/browser/components/shell/src/moz.build
+-@@ -11,17 +11,19 @@ if CONFIG['OS_ARCH'] == 'WINNT':
+-         'nsWindowsShellService.cpp',
++@@ -12,16 +12,18 @@ if CONFIG['OS_ARCH'] == 'WINNT':
+      ]
+  elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+-     CPP_SOURCES += [
++     SOURCES += [
+          'nsMacShellService.cpp',
+      ]
+  elif CONFIG['MOZ_WIDGET_GTK']:
+-     CPP_SOURCES += [
+-+        'nsUnixShellService.cpp',
++     SOURCES += [
+          'nsGNOMEShellService.cpp',
+-+	'nsKDEShellService.cpp'
+++        'nsKDEShellService.cpp',
+++        'nsUnixShellService.cpp'
+      ]
+  
+- if CPP_SOURCES:
++ if SOURCES:
+      LIBRARY_NAME = 'shellservice_s'
+  
+  EXTRA_COMPONENTS += [
+@@ -1747,7 +1772,7 @@
+ diff --git a/browser/installer/package-manifest.in b/browser/installer/package-manifest.in
+ --- a/browser/installer/package-manifest.in
+ +++ b/browser/installer/package-manifest.in
+-@@ -593,19 +593,21 @@
++@@ -613,19 +613,21 @@
+  @BINPATH@/defaults/autoconfig/prefcalls.js
+  @BINPATH@/browser/defaults/profile/prefs.js
+  
+
+++++++ firefox-multilocale-chrome.patch
+--- firefox-multilocale-chrome.patch
++++ firefox-multilocale-chrome.patch
+@@ -1,12 +1,12 @@
+ # HG changeset patch
+-# Parent 596aaeb7e5417f1f97eab2116503013bc68c0c3a
++# Parent f144d934d339d048bf9b650fc776397029150dd6
+ # User Wolfgang Rosenauer <wr@rosenauer.org>
+ Add searchplugins to chrome packaging for proper localization
+ 
+ diff --git a/browser/app/profile/firefox.js b/browser/app/profile/firefox.js
+ --- a/browser/app/profile/firefox.js
+ +++ b/browser/app/profile/firefox.js
+-@@ -351,16 +351,20 @@ pref("browser.helperApps.deleteTempFileO
++@@ -381,16 +381,20 @@ pref("browser.helperApps.deleteTempFileO
+  #endif
+  
+  // search engines URL
+@@ -30,19 +30,20 @@
+ diff --git a/browser/locales/Makefile.in b/browser/locales/Makefile.in
+ --- a/browser/locales/Makefile.in
+ +++ b/browser/locales/Makefile.in
+-@@ -63,20 +63,22 @@ UNINSTALLER_PACKAGE_HOOK = $(RM) -r $(ST
+- 
+- STUB_HOOK = $(NSINSTALL) -D "$(_ABS_DIST)/$(PKG_INST_PATH)"; \
+-     $(RM) "$(_ABS_DIST)/$(PKG_INST_PATH)$(PKG_STUB_BASENAME).exe"; \
++@@ -66,21 +66,23 @@ STUB_HOOK = $(NSINSTALL) -D "$(_ABS_DIST
+      cp ../installer/windows/l10ngen/stub.exe "$(_ABS_DIST)/$(PKG_INST_PATH)$(PKG_STUB_BASENAME).exe"; \
+      chmod 0755 "$(_ABS_DIST)/$(PKG_INST_PATH)$(PKG_STUB_BASENAME).exe"; \
+      $(NULL)
+  endif
+  
++ ifeq ($(MOZ_WIDGET_TOOLKIT) $(DIST_SUBDIR),windows metro)
++ SEARCHPLUGINS_NAMES = $(shell cat $(call MERGE_FILE,/searchplugins/metrolist.txt))
++ else
+ -SEARCHPLUGINS_NAMES = $(shell cat $(call MERGE_FILE,/searchplugins/list.txt))
+ +SEARCHPLUGINS_NAMES = $(shell cat \
+-+	$(firstword $(wildcard $(LOCALE_SRCDIR)/searchplugins/list.txt) \
+-+	@srcdir@/en-US/searchplugins/list.txt ) )
+++    $(firstword $(wildcard $(LOCALE_SRCDIR)/searchplugins/list.txt) \
+++    @srcdir@/en-US/searchplugins/list.txt ) )
++ endif
+  SEARCHPLUGINS_PATH := $(FINAL_TARGET)/searchplugins
+  SEARCHPLUGINS := $(addsuffix .xml,$(SEARCHPLUGINS_NAMES))
+ -PP_TARGETS += SEARCHPLUGINS
+@@ -55,7 +56,7 @@
+  DIST_SUBDIRS = browser metro
+  else
+  DIST_SUBDIRS = $(DIST_SUBDIR)
+-@@ -123,20 +125,44 @@ install:: $(addprefix generic/profile/,$
++@@ -127,20 +129,44 @@ install:: $(addprefix generic/profile/,$
+  
+  install:: $(call MERGE_FILES,$(addprefix profile/chrome/,$(PROFILE_CHROME)))
+  	$(SYSINSTALL) $(IFLAGS1) $^ $(DESTDIR)$(mozappdir)/defaults/profile/chrome
+@@ -77,11 +78,11 @@
+ +	done
+ +
+ +searchplugins-jar:: tmp-search.jar.mn
+-+	$(PYTHON) $(MOZILLA_DIR)/config/JarMaker.py \
+++	$(call py_action,jar_maker,\
+ +	 $(QUIET) -j $(FINAL_TARGET)/chrome \
+ +	 -s $(topsrcdir)/$(relativesrcdir)/en-US/searchplugins \
+ +	 -s $(LOCALE_SRCDIR)/searchplugins \
+-+	 $(MAKE_JARS_FLAGS) tmp-search.jar.mn
+++	 $(MAKE_JARS_FLAGS) tmp-search.jar.mn)
+ +
+ +libs:: searchplugins-jar
+ +
+@@ -103,7 +104,7 @@
+ diff --git a/browser/locales/en-US/searchplugins/google.xml b/browser/locales/en-US/searchplugins/google.xml
+ --- a/browser/locales/en-US/searchplugins/google.xml
+ +++ b/browser/locales/en-US/searchplugins/google.xml
+-@@ -9,24 +9,16 @@
++@@ -9,25 +9,17 @@
+  <Image width="16" height="16">data:image/x-icon;base64,AAABAAIAEBAAAAAAAAB9AQAAJgAAACAgAAAAAAAA8gIAAKMBAACJUE5HDQoaCgAAAA1JSERSAAAAEAAAABAIBgAAAB/z/2EAAAFESURBVDjLpZNJSwNBEIXnt4lE4kHxovgT9BDwJHqPy0HEEOJBiAuCRg+KUdC4QS4KrpC4gCBGE3NQ48JsnZ6eZ3UOM6gjaePhQU93v6+qq2q0pqgeJj2S8EdJT1hr0OxBtKCD5iEd8QxDYpvhvOBAuMDKURX9C9aPu4GA1GEVkzvMg10UBfYveWAWgYAP00V01fa+R9M2bA51wJvhIn3qR+ybt3D3JNQBE5sMjCIOLFpoHzOwdsLRO22qA6R6kiZiWwxUvy/PUQZIhYZ1vFM9cvcOOsYNdcBgysISdSJBnZjJMlR0Fw8vAp0xoz5gao/h+NZBy4i/10XGwrPA+hmvDyhVRG2Avu/LwcrkFADZa16L1h330w1RNgc3DiJzCpPYRm1bpveXX11clQR28xwblHpk1vq1iP/5mcoS0CoXDZiL0vsJ+dzfl+3T/VYAAAAASUVORK5CYIKJUE5HDQoaCgAAAA1JSERSAAAAIAAAACAIBgAAAHN6evQAAAK5SURBVFjDxVfrSxRRFJ9/Jta/oyWjF5XQm6D6EkHRgygIIgjUTcueVgqVWSRRkppEUQYWWB8ye1iGWilWlo/Ude489s7M6Zw7D9dlt53dmd29cFiWvXvO77x+51xpaaUsoSxBaUWZQ4ECy5xji2xKZDyCMlMEw6lCNiOSgwZKJK1SkcKeSealfP64t0mBjl4Ow39MkDUL0p2RSROOtqhZdeUEYM1pBl39XCg/fEeFtWcY7G9W4csvUxjlBkCsQ4Nt9QyWVfvT6RsAKXw3aoDGATZeYIt+W1kjw7cJG0RctWDTRebbKd8A6h5pwsDb70ba3w/eUr3wt/cmwgfw6Yft4TNMQaY7o1P2ncm4FT4ANQH/jQBJ2xv7kqIXEADDql8eS3+n8bku7oxNm+EDIM/dU92upb3T/NJGeaNbDx/AsbsLRUY5Xn92caWXY5d8RV6gWllxSg4fAEnTC90DQW13BLlgXR2D3dcUeDVkwOthA1bXspxILWcm3HdThcfvufB26LcJpkOEAz9NKI/lzqpSEC7feol5EWnpSeSlIxCALUkApmULdjUqxQVAQnl3D/X/yQda4QBEq2TYc12By091MQ17Bg3R88nHKlQbVmHvj89awNBLYrwT9zXY2aBAxTkGFdiSxP/Jp6FLDw+AS7GfsdJTJ2EqSO5khD43nGfBARy/ZxOQgZHe7GPM1jzUvChUtmnBAXQPcKGMJp3fdFGq6NByEhiAO4b/YptFfQJwNyQ/bZkVQGcf90Ja25ndIyrKBOa/f8wIpwi3X1G8UcxNu7ozUS7tiH0jBswwS3RIaF1w6LYKU/ML2+8sGnjygQswtKrVIy/Qd9qQP6LnO64q4fPAKpxyZIymHo1jWk6p1ag2BsdNwQMHcC+M5kHFJX+YlPxpVlbCx2mZ5DzPI04k4kUwHHdskU3pH76iftG8yWlkAAAAAElFTkSuQmCC</Image>
+  <Url type="application/x-suggestions+json" method="GET" template="https://www.google.com/complete/search?client=firefox&amp;q={searchTerms}"/>
+  <Url type="text/html" method="GET" template="https://www.google.com/search">
+@@ -123,6 +124,7 @@
+ -#endif
+    <MozParam name="channel" condition="purpose" purpose="contextmenu" value="rcs"/>
+    <MozParam name="channel" condition="purpose" purpose="keyword" value="fflb"/>
++   <MozParam name="channel" condition="purpose" purpose="searchbar" value="sb"/>
+    <MozParam name="channel" condition="purpose" purpose="homepage" value="np"/>
+    <MozParam name="source" condition="purpose" purpose="homepage" value="hp"/>
+  </Url>
+@@ -131,7 +133,7 @@
+ diff --git a/browser/locales/jar.mn b/browser/locales/jar.mn
+ --- a/browser/locales/jar.mn
+ +++ b/browser/locales/jar.mn
+-@@ -122,14 +122,15 @@
++@@ -124,14 +124,15 @@
+      locale/browser/syncQuota.properties         (%chrome/browser/syncQuota.properties)
+  #endif
+  % locale browser-region @AB_CD@ %locale/browser-region/
+
+++++++ firefox-no-default-ualocale.patch
+--- firefox-no-default-ualocale.patch
++++ firefox-no-default-ualocale.patch
+@@ -1,17 +1,17 @@
+ # HG changeset patch
+ # User Wolfgang Rosenauer <wr@rosenauer.org>
+-# Parent 4ecbbda17c2a7a8f62beb568ab838b45beaaf36a
++# Parent e5018e95de4fe5a06e43b5e416e0333fc628408f
+ Do not overwrite the locale dynamic pref from xulrunner's all.js with a wrong default value
+ 
+ diff --git a/browser/app/profile/firefox.js b/browser/app/profile/firefox.js
+ --- a/browser/app/profile/firefox.js
+ +++ b/browser/app/profile/firefox.js
+-@@ -215,17 +215,17 @@ pref("extensions.{972ce4c6-7e08-4474-a28
+- 
+- pref("xpinstall.whitelist.add", "addons.mozilla.org");
+- pref("xpinstall.whitelist.add.180", "marketplace.firefox.com");
+- 
+- pref("lightweightThemes.update.enabled", true);
++@@ -245,17 +245,17 @@ pref("lightweightThemes.update.enabled",
++ // UI tour experience.
++ pref("browser.uitour.enabled", false);
++ pref("browser.uitour.themeOrigin", "https://addons.mozilla.org/%LOCALE%/firefox/themes/");
++ pref("browser.uitour.pinnedTabUrl", "https://support.mozilla.org/%LOCALE%/kb/pinned-tabs-keep-favorite-websites-open");
++ pref("browser.uitour.whitelist.add.260", "www.mozilla.org,support.mozilla.org");
+  
+  pref("keyword.enabled", true);
+  
+
+++++++ l10n-26.0.tar.bz2 -> l10n-27.0.tar.xz
+(723931 lines skipped)
+
+++++++ mozilla-kde.patch
+--- mozilla-kde.patch
++++ mozilla-kde.patch
+@@ -7,7 +7,7 @@
+ diff --git a/modules/libpref/src/Makefile.in b/modules/libpref/src/Makefile.in
+ --- a/modules/libpref/src/Makefile.in
+ +++ b/modules/libpref/src/Makefile.in
+-@@ -35,14 +35,15 @@ endif
++@@ -33,14 +33,15 @@ endif
+  # Optimizer bug with GCC 3.2.2 on OS/2
+  ifeq ($(OS_ARCH), OS2)
+  nsPrefService.$(OBJ_SUFFIX): nsPrefService.cpp
+@@ -26,7 +26,7 @@
+ diff --git a/modules/libpref/src/Preferences.cpp b/modules/libpref/src/Preferences.cpp
+ --- a/modules/libpref/src/Preferences.cpp
+ +++ b/modules/libpref/src/Preferences.cpp
+-@@ -26,16 +26,17 @@
++@@ -27,16 +27,17 @@
+  #include "nsIZipReader.h"
+  #include "nsPrefBranch.h"
+  #include "nsXPIDLString.h"
+@@ -44,7 +44,7 @@
+  #include "prefread.h"
+  #include "prefapi_private_data.h"
+  
+-@@ -1098,16 +1099,34 @@ pref_LoadPrefsInDir(nsIFile* aDir, char 
++@@ -1100,16 +1101,34 @@ pref_LoadPrefsInDir(nsIFile* aDir, char 
+  
+  static nsresult pref_LoadPrefsInDirList(const char *listId)
+  {
+@@ -79,7 +79,7 @@
+      return NS_OK;
+  
+    bool hasMore;
+-@@ -1123,17 +1142,17 @@ static nsresult pref_LoadPrefsInDirList(
++@@ -1125,17 +1144,17 @@ static nsresult pref_LoadPrefsInDirList(
+  
+      nsAutoCString leaf;
+      path->GetNativeLeafName(leaf);
+@@ -98,7 +98,7 @@
+  {
+    nsZipItemPtr<char> manifest(jarReader, name, true);
+    NS_ENSURE_TRUE(manifest.Buffer(), NS_ERROR_NOT_AVAILABLE);
+-@@ -1227,28 +1246,40 @@ static nsresult pref_InitInitialObjects(
++@@ -1229,28 +1248,40 @@ static nsresult pref_InitInitialObjects(
+    /* these pref file names should not be used: we process them after all other application pref files for backwards compatibility */
+    static const char* specialFiles[] = {
+  #if defined(XP_MACOSX)
+@@ -2137,7 +2137,7 @@
+  nsUnixSystemProxySettings::GetMainThreadOnly(bool *aMainThreadOnly)
+  {
+    // dbus prevents us from being threadsafe, but this routine should not block anyhow
+-@@ -498,16 +501,19 @@ nsUnixSystemProxySettings::GetProxyFromG
++@@ -504,16 +507,19 @@ nsUnixSystemProxySettings::GetProxyFromG
+  
+  nsresult
+  nsUnixSystemProxySettings::GetProxyForURI(const nsACString & aSpec,
+@@ -2157,7 +2157,7 @@
+    if (mGConf)
+      return GetProxyFromGConf(aScheme, aHost, aPort, aResult);
+  
+-@@ -533,8 +539,34 @@ static const mozilla::Module::ContractID
++@@ -539,8 +545,34 @@ static const mozilla::Module::ContractID
+  
+  static const mozilla::Module kUnixProxyModule = {
+    mozilla::Module::kVersion,
+@@ -2195,27 +2195,28 @@
+ diff --git a/toolkit/xre/moz.build b/toolkit/xre/moz.build
+ --- a/toolkit/xre/moz.build
+ +++ b/toolkit/xre/moz.build
+-@@ -44,18 +44,20 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'qt
++@@ -43,18 +43,20 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'qt
+          'nsNativeAppSupportQt.cpp',
+          'nsQAppInstance.cpp',
+      ]
+  elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'os2':
+-     CPP_SOURCES += [
++     SOURCES += [
+          'nsNativeAppSupportOS2.cpp',
+      ]
+  elif CONFIG['MOZ_ENABLE_GTK']:
+ +    EXPORTS += ['nsKDEUtils.h']
+-     CPP_SOURCES += [
+-         'nsNativeAppSupportUnix.cpp',
+-+	'nsKDEUtils.cpp'
++     SOURCES += [
++-        'nsNativeAppSupportUnix.cpp',
+++        'nsKDEUtils.cpp',
+++        'nsNativeAppSupportUnix.cpp'
+      ]
+  else:
+-     CPP_SOURCES += [
++     SOURCES += [
+          'nsNativeAppSupportDefault.cpp',
+      ]
+  
+  if CONFIG['MOZ_X11']:
+-     CPP_SOURCES += [
++     SOURCES += [
+ diff --git a/toolkit/xre/nsKDEUtils.cpp b/toolkit/xre/nsKDEUtils.cpp
+ new file mode 100644
+ --- /dev/null
+@@ -2616,12 +2617,12 @@
+ diff --git a/uriloader/exthandler/Makefile.in b/uriloader/exthandler/Makefile.in
+ --- a/uriloader/exthandler/Makefile.in
+ +++ b/uriloader/exthandler/Makefile.in
+-@@ -45,9 +45,10 @@ ifdef MOZ_ENABLE_DBUS
++@@ -44,9 +44,10 @@ endif
++ ifdef MOZ_ENABLE_DBUS
+  LOCAL_INCLUDES   += $(TK_CFLAGS) $(MOZ_DBUS_CFLAGS)
+  endif
+  
+  include $(topsrcdir)/config/rules.mk
+- include $(topsrcdir)/ipc/chromium/chromium-config.mk
+  
+  ifneq (,$(filter qt gtk2 gtk3, $(MOZ_WIDGET_TOOLKIT)))
+  CXXFLAGS += $(TK_CFLAGS) $(MOZ_DBUS_GLIB_CFLAGS)
+@@ -2630,25 +2631,26 @@
+ diff --git a/uriloader/exthandler/moz.build b/uriloader/exthandler/moz.build
+ --- a/uriloader/exthandler/moz.build
+ +++ b/uriloader/exthandler/moz.build
+-@@ -73,16 +73,18 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'coco
++@@ -73,17 +73,19 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'coco
+      ]
+  else:
+-     CPP_SOURCES += [
+-         'nsOSHelperAppService.cpp',
++     SOURCES += [
++         osdir + '/nsOSHelperAppService.cpp',
+      ]
+  
+  if CONFIG['MOZ_ENABLE_GTK']:
+-     CPP_SOURCES += [
+-+        'nsCommonRegistry.cpp',
+-+	'nsKDERegistry.cpp',
+-         'nsGNOMERegistry.cpp',
+-         'nsMIMEInfoUnix.cpp',
++     SOURCES += [
+++        'unix/nsCommonRegistry.cpp',
++         'unix/nsGNOMERegistry.cpp',
+++        'unix/nsKDERegistry.cpp',
++         'unix/nsMIMEInfoUnix.cpp',
+      ]
+  elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
+-     CPP_SOURCES += [
+-         'nsMIMEInfoAndroid.cpp',
+-         'nsAndroidHandlerApp.cpp',
+-         'nsExternalSharingAppService.cpp',
++     SOURCES += [
++         'android/nsAndroidHandlerApp.cpp',
++         'android/nsExternalSharingAppService.cpp',
++         'android/nsExternalURLHandlerService.cpp',
++         'android/nsMIMEInfoAndroid.cpp',
+ diff --git a/uriloader/exthandler/unix/nsCommonRegistry.cpp b/uriloader/exthandler/unix/nsCommonRegistry.cpp
+ new file mode 100644
+ --- /dev/null
+@@ -3069,10 +3071,10 @@
+  #endif
+  
+    // Now look up our extensions
+-diff --git a/widget/gtk2/Makefile.in b/widget/gtk2/Makefile.in
+---- a/widget/gtk2/Makefile.in
+-+++ b/widget/gtk2/Makefile.in
+-@@ -38,11 +38,14 @@ DEFINES		+= -DCAIRO_GFX -DMOZ_APP_NAME='
++diff --git a/widget/gtk/Makefile.in b/widget/gtk/Makefile.in
++--- a/widget/gtk/Makefile.in
+++++ b/widget/gtk/Makefile.in
++@@ -26,11 +26,14 @@ DEFINES		+= -DCAIRO_GFX -DMOZ_APP_NAME='
+  
+  INCLUDES	+= \
+  		-I$(srcdir)/../xpwidgets \
+@@ -3087,9 +3089,9 @@
+  ifdef MOZ_X11
+  INCLUDES   	+= -I$(srcdir)/../shared/x11
+  endif
+-diff --git a/widget/gtk2/nsFilePicker.cpp b/widget/gtk2/nsFilePicker.cpp
+---- a/widget/gtk2/nsFilePicker.cpp
+-+++ b/widget/gtk2/nsFilePicker.cpp
++diff --git a/widget/gtk/nsFilePicker.cpp b/widget/gtk/nsFilePicker.cpp
++--- a/widget/gtk/nsFilePicker.cpp
+++++ b/widget/gtk/nsFilePicker.cpp
+ @@ -1,32 +1,34 @@
+  /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+  /* This Source Code Form is subject to the terms of the Mozilla Public
+@@ -3125,7 +3127,7 @@
+  nsIFile *nsFilePicker::mPrevDisplayDirectory = nullptr;
+  
+  void
+-@@ -225,17 +227,19 @@ nsFilePicker::AppendFilters(int32_t aFil
++@@ -226,17 +228,19 @@ nsFilePicker::AppendFilters(int32_t aFil
+    return nsBaseFilePicker::AppendFilters(aFilterMask);
+  }
+  
+@@ -3146,7 +3148,7 @@
+  
+    mFilters.AppendElement(filter);
+    mFilterNames.AppendElement(name);
+-@@ -349,16 +353,32 @@ nsFilePicker::Show(int16_t *aReturn)
++@@ -350,16 +354,32 @@ nsFilePicker::Show(int16_t *aReturn)
+  
+  NS_IMETHODIMP
+  nsFilePicker::Open(nsIFilePickerShownCallback *aCallback)
+@@ -3179,7 +3181,7 @@
+  
+    GtkFileChooserAction action = GetGtkFileChooserAction(mMode);
+    const gchar *accept_button = (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+-@@ -537,8 +557,235 @@ nsFilePicker::Done(GtkWidget* file_choos
++@@ -538,8 +558,235 @@ nsFilePicker::Done(GtkWidget* file_choos
+    if (mCallback) {
+      mCallback->Done(result);
+      mCallback = nullptr;
+@@ -3415,9 +3417,9 @@
+ +    return NS_OK;
+ +    }
+ +
+-diff --git a/widget/gtk2/nsFilePicker.h b/widget/gtk2/nsFilePicker.h
+---- a/widget/gtk2/nsFilePicker.h
+-+++ b/widget/gtk2/nsFilePicker.h
++diff --git a/widget/gtk/nsFilePicker.h b/widget/gtk/nsFilePicker.h
++--- a/widget/gtk/nsFilePicker.h
+++++ b/widget/gtk/nsFilePicker.h
+ @@ -66,11 +66,17 @@ protected:
+    nsString  mDefault;
+    nsString  mDefaultExtension;
+@@ -3547,7 +3549,7 @@
+      bool contentAccessible = false;
+ +    TriState stDesktop = eUnspecified;
+  
+-     while (NULL != (token = nsCRT::strtok(whitespace, kWhitespace, &whitespace)) && ok) {
++     while (nullptr != (token = nsCRT::strtok(whitespace, kWhitespace, &whitespace)) && ok) {
+        ToLowerCase(token);
+        NS_ConvertASCIItoUTF16 wtoken(token);
+  
+@@ -3584,8 +3586,8 @@
+ diff --git a/xpcom/io/Makefile.in b/xpcom/io/Makefile.in
+ --- a/xpcom/io/Makefile.in
+ +++ b/xpcom/io/Makefile.in
+-@@ -7,9 +7,9 @@ include $(topsrcdir)/config/rules.mk
+- include $(topsrcdir)/ipc/chromium/chromium-config.mk
++@@ -6,9 +6,9 @@ MOZILLA_INTERNAL_API = 1
++ include $(topsrcdir)/config/rules.mk
+  
+  ifeq ($(OS_ARCH),Linux)
+  ifneq (,$(findstring lib64,$(libdir)))
+@@ -3598,11 +3600,11 @@
+ diff --git a/xpcom/io/nsLocalFileUnix.cpp b/xpcom/io/nsLocalFileUnix.cpp
+ --- a/xpcom/io/nsLocalFileUnix.cpp
+ +++ b/xpcom/io/nsLocalFileUnix.cpp
+-@@ -42,16 +42,17 @@
+- #include "prproces.h"
++@@ -43,16 +43,17 @@
+  #include "nsIDirectoryEnumerator.h"
+  #include "nsISimpleEnumerator.h"
+  #include "private/pprio.h"
++ #include "prlink.h"
+  
+  #ifdef MOZ_WIDGET_GTK
+  #include "nsIGIOService.h"
+@@ -3616,7 +3618,7 @@
+  #include "prmem.h"
+  #include "plbase64.h"
+  
+-@@ -1727,44 +1728,51 @@ nsLocalFile::SetPersistentDescriptor(con
++@@ -1728,44 +1729,51 @@ nsLocalFile::SetPersistentDescriptor(con
+      return InitWithNativePath(aPersistentDescriptor);
+  #endif
+  }
+@@ -3682,7 +3684,7 @@
+        return rv;
+      }
+      return NS_ERROR_FAILURE;
+-@@ -1772,16 +1780,23 @@ nsLocalFile::Reveal()
++@@ -1773,16 +1781,23 @@ nsLocalFile::Reveal()
+      return NS_ERROR_FAILURE;
+  #endif
+  }
+
+++++++ mozilla-ppc64le.patch
+--- mozilla-ppc64le.patch
++++ mozilla-ppc64le.patch
+@@ -1,12 +1,12 @@
+ # HG changeset patch
+-# Parent cad86882605788345b2791275efc6e1fa7500dbd
++# Parent e4ca21871e28639789930658e135a14f86069919
+ # User Ulrich Weigand <uweigand@de.ibm.com>
+ General PPC64 LE support
+ 
+ diff --git a/configure.in b/configure.in
+ --- a/configure.in
+ +++ b/configure.in
+-@@ -1079,17 +1079,17 @@ esac
++@@ -1082,17 +1082,17 @@ esac
+  
+  # Only set CPU_ARCH if we recognize the value of OS_TEST
+  
+@@ -64,7 +64,7 @@
+ diff --git a/js/src/configure.in b/js/src/configure.in
+ --- a/js/src/configure.in
+ +++ b/js/src/configure.in
+-@@ -910,17 +910,17 @@ esac
++@@ -923,17 +923,17 @@ esac
+  
+  # Only set CPU_ARCH if we recognize the value of OS_TEST
+  
+@@ -86,14 +86,14 @@
+ diff --git a/js/src/jscpucfg.h b/js/src/jscpucfg.h
+ --- a/js/src/jscpucfg.h
+ +++ b/js/src/jscpucfg.h
+-@@ -26,17 +26,17 @@
++@@ -22,17 +22,17 @@
++ 
++ # ifdef __WATCOMC__
+  #  define HAVE_VA_LIST_AS_ARRAY 1
+  # endif
+  
+  # define IS_LITTLE_ENDIAN 1
+  # undef  IS_BIG_ENDIAN
+- # define JS_BYTES_PER_WORD   4
+- # define JS_BITS_PER_WORD_LOG2   5
+  
+ -#elif defined(__APPLE__)
+ +#elif defined(__APPLE__) || defined(__powerpc__) || defined(__ppc__)
+@@ -105,7 +105,7 @@
+  #  define IS_BIG_ENDIAN 1
+  # endif
+  
+-@@ -88,18 +88,17 @@
++@@ -84,18 +84,17 @@
+  #  if defined(_STACK_GROWS_UPWARD)
+  #   define JS_STACK_GROWTH_DIRECTION (1)
+  #  elif defined(_STACK_GROWS_DOWNWARD)
+
+++++++ mozilla-shared-nss-db.patch
+--- mozilla-shared-nss-db.patch
++++ mozilla-shared-nss-db.patch
+@@ -7,7 +7,7 @@
+ diff --git a/configure.in b/configure.in
+ --- a/configure.in
+ +++ b/configure.in
+-@@ -8162,16 +8162,31 @@ AC_SUBST(QCMS_LIBS)
++@@ -7999,16 +7999,31 @@ AC_SUBST(QCMS_LIBS)
+  
+  dnl ========================================================
+  dnl HarfBuzz
+@@ -42,10 +42,10 @@
+ diff --git a/security/manager/ssl/src/Makefile.in b/security/manager/ssl/src/Makefile.in
+ --- a/security/manager/ssl/src/Makefile.in
+ +++ b/security/manager/ssl/src/Makefile.in
+-@@ -5,8 +5,11 @@
++@@ -4,8 +4,11 @@
++ # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  
+- EXPORT_LIBRARY	= 1
+  DEFINES += \
+    -DNSS_ENABLE_ECC \
+    -DDLL_PREFIX=\"$(DLL_PREFIX)\" \
+@@ -76,12 +76,12 @@
+  #include "nsNSSComponent.h"
+  
+  #include "CertVerifier.h"
++ #include "mozilla/Telemetry.h"
+  #include "nsCertVerificationThread.h"
+  #include "nsAppDirectoryServiceDefs.h"
+  #include "nsComponentManagerUtils.h"
+  #include "nsDirectoryServiceDefs.h"
+- #include "nsICertOverrideService.h"
+-@@ -1136,18 +1143,35 @@ nsNSSComponent::InitializeNSS(bool showW
++@@ -1263,18 +1270,35 @@ nsNSSComponent::InitializeNSS(bool showW
+      ConfigureInternalPKCS11Token();
+  
+      // The NSS_INIT_NOROOTINIT flag turns off the loading of the root certs
+@@ -122,7 +122,7 @@
+ diff --git a/toolkit/library/Makefile.in b/toolkit/library/Makefile.in
+ --- a/toolkit/library/Makefile.in
+ +++ b/toolkit/library/Makefile.in
+-@@ -473,17 +473,17 @@ LOCAL_INCLUDES += -I$(topsrcdir)/intl/un
++@@ -484,17 +484,17 @@ LOCAL_INCLUDES += -I$(topsrcdir)/intl/un
+  ifneq (,$(filter OS2 WINNT,$(OS_ARCH)))
+  SDK_LIBRARY = $(IMPORT_LIBRARY)
+  else
+
+++++++ mozilla-xpcom-ppc64le.patch
+--- mozilla-xpcom-ppc64le.patch
++++ mozilla-xpcom-ppc64le.patch
+@@ -1,5 +1,5 @@
+ # HG changeset patch
+-# Parent eaf8cf90f24bed087b8dc3900e57dc481c62e2a8
++# Parent 5f1384375f10a5f0ee7c8288adef9593822e4e68
+ # User Ulrich Weigand <uweigand@de.ibm.com>
+ PPC64 LE support for XPCOM
+ 
+@@ -28,11 +28,11 @@
+ diff --git a/xpcom/reflect/xptcall/src/md/unix/moz.build b/xpcom/reflect/xptcall/src/md/unix/moz.build
+ --- a/xpcom/reflect/xptcall/src/md/unix/moz.build
+ +++ b/xpcom/reflect/xptcall/src/md/unix/moz.build
+-@@ -193,16 +193,23 @@ if CONFIG['OS_TEST'] == 'powerpc':
++@@ -186,16 +186,23 @@ if CONFIG['OS_TEST'] == 'powerpc':
+  
+  if CONFIG['OS_TEST'] == 'powerpc64':
+      if CONFIG['OS_ARCH'] in ('Linux', 'FreeBSD'):
+-           CPP_SOURCES += [
++           SOURCES += [
+                'xptcinvoke_ppc64_linux.cpp',
+                'xptcstubs_ppc64_linux.cpp',
+            ]
+@@ -46,7 +46,7 @@
+ +
+  if CONFIG['OS_TEST'] in ('macppc', 'bebox', 'ofppc', 'prep', 'amigappc'):
+      if CONFIG['OS_ARCH'] == 'NetBSD':
+-         CPP_SOURCES += [
++         SOURCES += [
+              'xptcinvoke_ppc_netbsd.cpp',
+              'xptcstubs_ppc_netbsd.cpp',
+          ]
+
+++++++ source-stamp.txt
+--- source-stamp.txt
++++ source-stamp.txt
+@@ -1,2 +1,2 @@
+-REV=39faf812aaec
++REV=b8896fee530d
+ REPO=http://hg.mozilla.org/releases/mozilla-release
+
+++++++ deleted files:
+--- firefox-26.0-source.tar.bz2
+--- mozilla-bug929439.patch

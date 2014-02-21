@@ -1,0 +1,5 @@
+<comments request="221303">
+  <comment who="jreidinger" when="2014-02-11 09:36:09 UTC" id="1166">Coolo - It is problematic, It needs new yast2-installation, but it doesn't depend on it because installation depends on this package iff control file contain it. So it is dynamic dependency. With new installation it work, but I do not know how to express that it need it. ( I agree that design is not good ).</comment>
+  <comment who="coolo" when="2014-02-11 09:52:47 UTC" id="1167" parent="1166">Conflicts: yast2-installation &lt; THEONE</comment>
+  <comment who="jreidinger" when="2014-02-11 10:37:41 UTC" id="1169" parent="1167">thanks, good idea, I will fix it</comment>
+</comments>
