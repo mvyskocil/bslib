@@ -521,5 +521,5 @@ class Comments:
 
         comments = [Comment.fromxml(el) for el in root]
         return cls(
-            {attr : value},
+            (attr, value),
             comments)

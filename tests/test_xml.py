@@ -67,7 +67,7 @@ def test_mandatory_attrs_variables():
 def test_comments():
     comments = Comments.fromxml(ET.parse(_a("comments.xml")).getroot())
 
-    assert comments.comment_for == {"request" : "221303"}
+    assert comments.comment_for == ("request", "221303")
     assert len(comments.comments) == 3
 
     c = comments.comments
