@@ -14,6 +14,11 @@ import ssl
 from collections import OrderedDict
 
 try:
+    unicode
+except NameError:
+    unicode = str
+
+try:
     from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
     from urllib.request import HTTPBasicAuthHandler, HTTPPasswordMgrWithDefaultRealm, HTTPSHandler, ProxyHandler, proxy_bypass, HTTPCookieProcessor
     from urllib.request import build_opener as _build_opener
@@ -74,7 +79,7 @@ def build_opener(apiurl, user, password, cookie_path, debuglevel=0, capath=None,
         cookie_file = os.path.expanduser(cookie_path)
         cookiejar = LWPCookieJar(cookie_file)
         cookiejar.load(ignore_discard=True)
-    except (OSError, AttributeError):
+    except (OSError, IOError, AttributeError):
         try:
             os.open(cookie_file, os.O_WRONLY | os.O_CREAT, mode=0o600)
         except:
@@ -154,8 +159,6 @@ def coroutine(func):
 
 def cat(fp, target):
     """Like unix cat, just send numbered lines from fp to target"""
-    if isinstance(fp, str):
-        raise ValueError("Type str is not supported!")
     for i, line in enumerate(fp):
         target.send((i+1, line))
 
@@ -225,6 +228,9 @@ def diff_to_dict(fp, _klass=OrderedDict):
 
     This makes a bridge between coroutines and normal routines ...
     """
+    if isinstance(fp, (str, unicode)):
+        raise ValueError("IO-like object expected, not plain string/unicode")
+
     dct = _klass()
     try:
         cat(fp, co_parse_obs_diff(
