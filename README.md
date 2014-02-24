@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mvyskocil/bslib.png?branch=master)](https://travis-ci.org/mvyskocil/bslib)
+
 # about bslib
 
 bslib is a light-weight library for accessing [Open Build Service](http://openbuildservice.org/).
